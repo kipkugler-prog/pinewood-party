@@ -17,9 +17,9 @@ function matchPlayer(H, person) {
 // ---------- shared view pieces ----------
 const big = (t, cls = '') => `<h2 class="qbig ${cls}">${esc(t)}</h2>`;
 const kicker = t => `<p class="kick">${esc(t)}</p>`;
-function optsTV(opts, { right = -1, counts = null, pickers = null, P = {} } = {}) {
+function optsTV(opts, { right = -1, counts = null, pickers = null, P = {}, gone = [] } = {}) {
   return `<div class="tvopts n${opts.length}">${opts.map((o, i) => {
-    const st = right < 0 ? '' : (i === right ? ' right' : ' wrong');
+    const st = right < 0 ? (arr(gone).includes(i) ? ' gone' : '') : (i === right ? ' right' : ' wrong');
     const who = pickers ? `<span class="who">${arr(pickers[i]).map(u => avatar(P[u], 'sm')).join('')}</span>` : '';
     return `<div class="tvopt${st}" style="--ac:${ANS[i].c}"><b>${ANS[i].k}</b><span>${esc(o)}</span>${counts ? `<em>${counts[i] || 0}</em>` : ''}${who}</div>`;
   }).join('')}</div>`;
@@ -36,6 +36,13 @@ function gainsList(gains, P, max = 18) {
   if (!rows.length) return `<p class="none">Nobody scored this time.</p>`;
   return `<ul class="gains">${rows.map(([u, v]) => `<li>${avatar(P[u], 'sm')}<span>${esc(nameOf(P, u))}</span><b>+${v}</b></li>`).join('')}</ul>`;
 }
+export const TROPHY = '<svg class="trophy" viewBox="0 0 120 112" aria-hidden="true"><path d="M30 26H15c0 18 8 28 19 30M90 26h15c0 18-8 28-19 30" fill="none" stroke="#1f9e97" stroke-width="7" stroke-linecap="round"/><path d="M28 14h64v26c0 21-14 37-32 37S28 61 28 40z" fill="#45c6bf"/><path d="M60 14h32v26c0 21-14 37-32 37z" fill="#2fb0a9"/><path d="M42 24v20" stroke="#fff" stroke-opacity=".7" stroke-width="6" stroke-linecap="round"/><rect x="52" y="76" width="16" height="14" fill="#1f9e97"/><rect x="34" y="90" width="52" height="14" rx="5" fill="#8a5a2b"/></svg>';
+export function champLine(scores, P) {
+  const rows = Object.entries(obj(scores)).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
+  if (!rows.length) return 'Game over!';
+  const win = rows.filter(([, v]) => v === rows[0][1]).map(([u]) => nameOf(P, u));
+  return win.length === 1 ? `${win[0]} wins!` : `It's a tie: ${win.join(' & ')}!`;
+}
 export function rankTV(scores, P, title = 'Scores', max = 10) {
   const rows = Object.entries(obj(scores)).sort((a, b) => b[1] - a[1]);
   const ps = Object.keys(P).filter(u => !(u in obj(scores))).map(u => [u, 0]);
@@ -45,9 +52,9 @@ export function rankTV(scores, P, title = 'Scores', max = 10) {
 // phone pieces
 const wait = (t, sub = '') => `<div class="wait"><div class="dots"><i></i><i></i><i></i></div><h2>${esc(t)}</h2>${sub ? `<p>${esc(sub)}</p>` : ''}</div>`;
 const lookTV = (t = 'Eyes on the TV!') => `<div class="wait"><h2>${esc(t)}</h2></div>`;
-function choicesPhone(opts, { mine = null, off = [], q = '' } = {}) {
+function choicesPhone(opts, { mine = null, off = [], q = '', tools = '' } = {}) {
   if (mine) return `<div class="wait"><h2>Locked in!</h2><div class="lock" style="--ac:${ANS[mine.a].c}"><b>${ANS[mine.a].k}</b> ${esc(opts[mine.a])}</div><p>Waiting for everyone else…</p></div>`;
-  return `${q ? `<p class="pq">${esc(q)}</p>` : ''}<div class="popts n${opts.length}">${opts.map((o, i) => `<button class="popt" data-choice="${i}" style="--ac:${ANS[i].c}"${off.includes(i) ? ' disabled' : ''}><b>${ANS[i].k}</b><span>${esc(o)}</span></button>`).join('')}</div>`;
+  return `${q ? `<p class="pq">${esc(q)}</p>` : ''}${tools}<div class="popts n${opts.length}">${opts.map((o, i) => `<button class="popt${arr(off).includes(i) ? ' gone' : ''}" data-choice="${i}" style="--ac:${ANS[i].c}"${arr(off).includes(i) ? ' disabled' : ''}><b>${ANS[i].k}</b><span>${esc(o)}</span></button>`).join('')}</div>`;
 }
 function resultPhone(ok, pts, line) {
   return `<div class="res ${ok ? 'ok' : 'no'}"><h2>${ok ? 'Correct!' : 'Not quite'}</h2>${pts ? `<p class="pts">+${pts}</p>` : ''}${line ? `<p>${esc(line)}</p>` : ''}</div>`;
@@ -92,7 +99,7 @@ const trivia = {
   tv(S, P) {
     const v = S.view;
     if (S.phase === 'intro') return `<div class="center">${kicker(`Question ${v.n} of ${v.of}`)}${big(v.cat || 'Family trivia', 'huge')}${v.lvl ? `<p class="lvl">${LEVELS[v.lvl]}</p>` : ''}</div>`;
-    if (S.phase === 'ask') return `<div class="askwrap">${v.img ? `<img class="qimg" src="${esc(imgURL(v.img))}" alt="">` : ''}${big(v.q)}${optsTV(v.opts)}</div>`;
+    if (S.phase === 'ask') return `<div class="askwrap"><div class="asktop"><button class="ghost say" data-say>Read it out loud</button></div>${v.img ? `<img class="qimg" src="${esc(imgURL(v.img))}" alt="">` : ''}${big(v.q)}${optsTV(v.opts)}</div>`;
     if (S.phase === 'reveal') return `${big(v.q, 'small')}${optsTV(v.opts, { right: v.right, pickers: v.pickers, P })}${storyBox(v.story, v.src, v.img, v.cal)}${gainsList(v.gains, P, 18)}`;
     if (S.phase === 'scores') return rankTV(S.g.scores, P, 'Leaderboard');
   },
@@ -108,13 +115,13 @@ const trivia = {
 // ---------- 2. Pinewood Spin (take turns) ----------
 const spin = {
   id: 'spin', name: 'Pinewood Spin', color: '#2bb3b1',
-  blurb: 'Take turns. Spin the wheel on your phone and answer a question at your own level while everyone watches.',
+  blurb: 'Take turns. Spin the wheel on your phone and answer a question at your own level while everyone watches. Everyone gets one 50/50 helper.',
   settings: [{ k: 'turns', label: 'Turns each', opts: [[1, '1'], [2, '2'], [3, '3']], def: 1 }],
   check: C => C.trivia.length >= 4 ? '' : 'Add trivia questions to the sheet first.',
   wheelCats(H) { const used = new Set(H.C.trivia.map(t => t.cat)); return H.C.categories.filter(c => used.has(c.id)).slice(0, 10).map(c => ({ id: c.id, short: c.short, color: c.color, t: c.t })); },
   start(H, o) {
     const order = H.online().map(p => p.uid);
-    H.S.g = { order, turn: 0, total: order.length * +o.turns, scores: {}, seen: {}, rot: 0, cats: this.wheelCats(H) };
+    H.S.g = { order, turn: 0, total: order.length * +o.turns, scores: {}, seen: {}, rot: 0, cats: this.wheelCats(H), fifty: {} };
     this.spinTurn(H);
   },
   spinTurn(H) {
@@ -141,12 +148,24 @@ const spin = {
       g.cur = { q: t.q, opts, a: opts.indexOf(t.a), story: t.story, src: t.src, img: t.img, cal: t.cal, cat: g.cats[i].short, catColor: g.cats[i].color, lvl };
       return H.phase('spinning', { auto: 3.4, view: { cur, from, rot: g.rot, turn: S.view.turn, of: S.view.of } });
     }
-    if (S.phase === 'spinning') { const q = g.cur; return H.phase('ask', { dur: T.spinAsk, expect: [cur], view: { cur, q: q.q, opts: q.opts, cat: q.cat, catColor: q.catColor, lvl: q.lvl, img: q.cal ? '' : q.img, turn: S.view.turn, of: S.view.of } }); }
+    if (S.phase === 'spinning') { const q = g.cur; return H.phase('ask', { dur: T.spinAsk, expect: [cur], view: { cur, q: q.q, opts: q.opts, cat: q.cat, catColor: q.catColor, lvl: q.lvl, img: q.cal ? '' : q.img, turn: S.view.turn, of: S.view.of, gone: [] } }); }
     if (S.phase === 'ask') {
       const q = g.cur, pickd = obj(H.inputs[cur]).a, ok = pickd === q.a; if (ok) add(g, cur, 1000);
       return H.phase('reveal', { auto: q.story ? 11 : 7, view: { ...S.view, right: q.a, picked: pickd ?? -1, ok, story: q.story, src: q.src, img: q.img, cal: q.cal } });
     }
     if (S.phase === 'reveal') { g.turn++; return g.turn >= g.total ? H.finish() : this.spinTurn(H); }
+  },
+  onPlayers(H) {
+    const S = H.S, g = S.g, cur = S.view && S.view.cur;
+    if (S.phase !== 'ask' || !g || !cur) return false;
+    const p = H.P[cur]; g.fifty = obj(g.fifty);
+    if (!p || p.fifty !== S.key || g.fifty[cur] || H.inputs[cur]) return false;
+    g.fifty[cur] = true;
+    const q = g.cur, wrong = q.opts.map((o, j) => j).filter(j => j !== q.a);
+    const gone = shuffle(wrong).slice(0, Math.max(0, q.opts.length - 2));
+    const left = Math.max(8, Math.ceil(((S.deadline || 0) - H.now()) / 1000));
+    H.phase('ask', { dur: left, expect: [cur], view: { ...S.view, gone } });
+    return true;
   },
   wheelSVG(cats, from, to) {
     const n = cats.length, a = 360 / n, R = 150;
@@ -167,7 +186,7 @@ const spin = {
       const w = this.wheelSVG(g.cats, S.phase === 'spinning' ? v.from : v.rot, v.rot);
       return `<div class="spinwrap">${w}<div>${kicker(`Turn ${v.turn} of ${v.of}`)}<h2 class="qbig">${S.phase === 'spin' ? `${who}, tap <u>Spin</u> on your phone!` : `${who} is spinning…`}</h2><p class="lvl">${LEVELS[(P[v.cur] && P[v.cur].level) || 'I']} level</p></div></div>`;
     }
-    if (S.phase === 'ask') return `<div class="askwrap"><p class="chipc" style="--cc:${v.catColor}">${esc(v.cat)} · ${esc(who)}'s ${LEVELS[v.lvl]} question</p>${v.img ? `<img class="qimg" src="${esc(imgURL(v.img))}" alt="">` : ''}${big(v.q)}${optsTV(v.opts)}</div>`;
+    if (S.phase === 'ask') return `<div class="askwrap"><div class="asktop"><p class="chipc" style="--cc:${v.catColor}">${esc(v.cat)} · ${esc(who)}'s ${LEVELS[v.lvl]} question</p>${arr(v.gone).length ? '<p class="helper">50/50 helper used</p>' : ''}<button class="ghost say" data-say>Read it out loud</button></div>${v.img ? `<img class="qimg" src="${esc(imgURL(v.img))}" alt="">` : ''}${big(v.q)}${optsTV(v.opts, { gone: v.gone })}</div>`;
     if (S.phase === 'reveal') return `<p class="verdict ${v.ok ? 'yes' : 'no'}">${v.ok ? `${who} got it! +1,000` : v.picked < 0 ? `Time's up! The answer is ${esc(v.opts[v.right])}.` : `Not quite! The answer is ${esc(v.opts[v.right])}.`}</p>${big(v.q, 'small')}${optsTV(v.opts, { right: v.right })}${storyBox(v.story, v.src, v.img, v.cal)}`;
   },
   phone(S, me, mine) {
@@ -175,7 +194,11 @@ const spin = {
     if (v.cur !== me) return S.phase === 'reveal' ? lookTV() : wait(`${S.phase === 'ask' ? 'Watch the TV' : 'Not your turn yet'}`, 'Cheer them on!');
     if (S.phase === 'spin') return mine ? wait('Spinning…') : `<div class="center"><h2 class="pbig">Your turn!</h2><button class="spinbtn" data-choice="0">Spin!</button></div>`;
     if (S.phase === 'spinning') return wait('Spinning…', 'Watch the wheel on the TV');
-    if (S.phase === 'ask') return choicesPhone(v.opts, { mine, q: v.q });
+    if (S.phase === 'ask') {
+      const used = !!obj(S.g && S.g.fifty)[me] || arr(v.gone).length > 0, canFifty = !used && v.opts.length > 2;
+      const tools = mine ? '' : `<div class="ptools">${canFifty ? '<button class="ghost" data-fifty>50/50 helper</button>' : '<span class="used">50/50 used</span>'}<button class="ghost" data-say>Read it to me</button></div>`;
+      return choicesPhone(v.opts, { mine, q: v.q, off: arr(v.gone), tools });
+    }
     if (S.phase === 'reveal') return resultPhone(v.ok, v.ok ? 1000 : 0, v.ok ? '' : `It was ${v.opts[v.right]}.`);
     return lookTV();
   }

@@ -1,7 +1,7 @@
 // Phone / player screen: join with a room code, then answer, draw and vote.
 import { connect } from './net.js';
 import { $, $$, esc, obj, arr, avatar, PCOLORS, LEVELS, INK, PEN, drawStrokes } from './common.js';
-import { GAMES } from './games.js';
+import { GAMES, TROPHY } from './games.js';
 
 const KEY = 'pp-join';
 let net, code = '', me = '', S = null, P = {}, mine = null, mineKey = '', shown = '', unsubs = [], pad = null, autoSent = '';
@@ -94,7 +94,7 @@ function render() {
   if (S.game === 'lobby' || !g) body = `<div class="wait"><h2>You're in!</h2><p>Watch the TV. The game starts soon.</p><p class="hint">Room ${esc(code)}</p></div>`;
   else if (S.phase === 'final') {
     const rows = Object.entries(obj(S.view.scores)).sort((a, b) => b[1] - a[1]); const i = rows.findIndex(([u]) => u === me);
-    body = `<div class="res ok"><h2>${i === 0 ? 'You won!' : i > 0 ? `You came in #${i + 1}` : 'Game over'}</h2>${i >= 0 ? `<p class="pts">${rows[i][1].toLocaleString()}</p>` : ''}<p>Look at the TV for the Family Cup.</p></div>`;
+    body = `<div class="res ok">${i === 0 && rows[0][1] > 0 ? TROPHY : ''}<h2>${i === 0 ? 'You won!' : i > 0 ? `You came in #${i + 1}` : 'Game over'}</h2>${i >= 0 ? `<p class="pts">${rows[i][1].toLocaleString()}</p>` : ''}<p>Look at the TV for the Family Cup.</p></div>`;
   }
   else body = g.phone(S, me, mine, P) || '';
   app.innerHTML = `<header class="ptop"><span class="topinfo" id="topinfo"></span><span class="ptimer" id="ptimer" hidden></span></header><main class="pmain" style="--gc:${g ? g.color : '#45c6bf'}">${body}</main>`;
@@ -109,6 +109,16 @@ function submit(v) {
 function bind() {
   const g = GAMES[S.game];
   for (const b of $$('[data-choice]')) b.onclick = () => { if (!b.disabled) submit({ a: +b.dataset.choice, t: net.now() }); };
+  // Pinewood Spin helpers: ask the TV for a 50/50, or read the question aloud on this phone
+  const fb = $('[data-fifty]');
+  if (fb) fb.onclick = () => { fb.disabled = true; fb.textContent = 'One moment…'; net.update(room('players/' + me), { fifty: S.key }); };
+  const sb = $('[data-say]');
+  if (sb) sb.onclick = () => {
+    if (!('speechSynthesis' in window)) return;
+    const v = S.view || {}, gone = arr(v.gone);
+    const opts = arr(v.opts).map((o, i) => gone.includes(i) ? '' : `${'ABCDEFGHIJ'[i]}: ${o}.`).filter(Boolean).join(' ');
+    try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(`${v.q || ''} ${opts}`); u.rate = .92; speechSynthesis.speak(u); } catch (e) {}
+  };
   const f = $('form[data-form]');
   if (f) f.onsubmit = e => {
     e.preventDefault();

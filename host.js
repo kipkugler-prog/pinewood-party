@@ -1,7 +1,7 @@
 // TV / host screen. The TV runs the game: it owns the room, the timers and the scoring.
 import { connect } from './net.js';
 import { $, $$, esc, clean, obj, arr, loadContent, avatar, animateStrokes, PCOLORS } from './common.js';
-import { GAMES, ORDER, rankTV } from './games.js';
+import { GAMES, ORDER, rankTV, TROPHY, champLine } from './games.js';
 
 const LETTERS = 'ABCDEFGHJKMNPQRSTUVWXYZ';
 const ROOMKEY = 'pp-host-room';
@@ -85,6 +85,7 @@ function onInputs() {
 }
 function onPlayers() {
   if (S.game === 'lobby') renderLobbyParts(); else renderProgress();
+  const gm = GAMES[S.game]; if (gm && gm.onPlayers && S.phase !== 'final' && gm.onPlayers(H)) { commit(); return; }
   if (S.expect) onInputs();
 }
 function tick() {
@@ -109,7 +110,7 @@ function render() {
   if (S.game === 'lobby') { renderLobby(); return; }
   if (S.phase === 'final') {
     const g = GAMES[S.game];
-    $('#stage').innerHTML = `<div class="finalwrap">${rankTV(S.view.scores, P, `${g.name}: final scores`, 12)}<div class="finalside">${rankTV(S.cup, P, 'Family Cup (all games tonight)', 8)}<button class="go big" id="tolobby">Back to the game menu</button></div></div>`;
+    $('#stage').innerHTML = `<div class="finalwrap"><div class="finalmain"><div class="champ">${TROPHY}<div><p class="kick">${esc(g.name)}</p><h2>${esc(champLine(S.view.scores, P))}</h2></div></div>${rankTV(S.view.scores, P, 'Final scores', 10)}</div><div class="finalside">${rankTV(S.cup, P, 'Family Cup (all games tonight)', 8)}<button class="go big" id="tolobby">Back to the game menu</button></div></div>`;
     $('#tolobby').onclick = toLobby; renderProgress(); return;
   }
   $('#stage').innerHTML = `<div class="anim" data-phase="${esc(S.phase)}" style="--gc:${game.color}">${game.tv(S, P) || ''}</div>`;
@@ -151,7 +152,7 @@ function renderLobby() {
   $('#cards').innerHTML = ORDER.map(id => {
     const g = GAMES[id];
     return `<article class="gcard" data-g="${id}" style="--gc:${g.color}"><h3>${esc(g.name)}</h3><p>${esc(g.blurb)}</p><div class="sets">${g.settings.map(s => `<label>${esc(s.label)}<select data-k="${s.k}" id="s-${id}-${s.k}">${s.opts.map(([v, t]) => `<option value="${v}"${v === s.def ? ' selected' : ''}>${esc(t)}</option>`).join('')}</select></label>`).join('')}</div><p class="why"></p><button class="go" data-play="${id}">Play</button></article>`;
-  }).join('');
+  }).join('') + `<article class="gcard classic" style="--gc:#7a4fc9"><h3>Pinewood Trivia Classic</h3><p>The original game on this one screen. Take turns spinning the wheel, with the 50/50 helper and story time. No phones needed.</p><a class="go" href="classic.html">Open</a></article>`;
   $('#cards').onclick = e => {
     const b = e.target.closest('[data-play]'); if (!b || b.disabled) return;
     const id = b.dataset.play, card = b.closest('.gcard'), opts = {};
@@ -174,7 +175,7 @@ function renderLobbyParts() {
   else if (C.error) cs.innerHTML = `Couldn't load the question sheet. <button class="link" id="reload">Try again</button>`;
   else cs.innerHTML = `Loaded from ${esc(C.note || 'built-in prompts')}: ${C.trivia.length} trivia · ${C.truths.length} two-truths · ${C.guess.length} guess-who · ${C.fibs.length} fibs · ${C.quips.length} quips · ${C.doodles.length} doodles <button class="link" id="reload">Reload questions</button>`;
   const rl = $('#reload'); if (rl) rl.onclick = loadQuestions;
-  for (const card of $$('.gcard')) {
+  for (const card of $$('.gcard[data-g]')) {
     const g = GAMES[card.dataset.g], why = !C ? 'Loading…' : !ps.length ? 'Waiting for players to join' : g.check(C, ps);
     $('.why', card).textContent = why; $('[data-play]', card).disabled = !!why;
   }
@@ -182,6 +183,15 @@ function renderLobbyParts() {
   $('#cupbox').innerHTML = hasCup ? `${rankTV(S.cup, P, 'Family Cup', 8)}<button class="link" id="resetcup">${armed === 'cup' ? 'Tap again to reset the Family Cup' : 'Reset the Family Cup'}</button>` : '';
   const rc = $('#resetcup'); if (rc) rc.onclick = () => { if (armed === 'cup') { armed = ''; S.cup = {}; commit(); } else { armed = 'cup'; renderLobbyParts(); setTimeout(() => { if (armed === 'cup') { armed = ''; renderLobbyParts(); } }, 3000); } };
 }
+
+// ---------- read the question out loud on the TV ----------
+const canSpeak = 'speechSynthesis' in window && typeof SpeechSynthesisUtterance !== 'undefined';
+$('#stage').addEventListener('click', e => {
+  if (!e.target.closest('[data-say]') || !canSpeak) return;
+  const v = S.view || {}, gone = Array.isArray(v.gone) ? v.gone : [];
+  const opts = (v.opts || []).map((o, i) => gone.includes(i) ? '' : `${'ABCDEFGHIJ'[i]}: ${o}.`).filter(Boolean).join(' ');
+  try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(`${v.q || ''} ${opts}`); u.rate = .92; speechSynthesis.speak(u); } catch (x) {}
+});
 
 // ---------- host controls ----------
 $('#next').onclick = () => { if (S.game !== 'lobby') { advancing = ''; advance(); } };

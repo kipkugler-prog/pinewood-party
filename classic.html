@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2e5b47">
+<title>Pinewood Trivia Classic</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+[hidden]{display:none!important}
+
+/* VOICE: a loud, happy family game night at Grandma and Grandpa's, readable from the couch and easy for a grandkid to tap
+   IDEA: the house on Pinewood, Mom's binder of Mother's Day letters and Grandma's gingham birthday calendar
+   PICTURE: a taped-in snapshot of the July 2021 family photo beside the spinning topic wheel; answers end in a "story time" letter
+   COLOUR: pine-green gingham ground, white cards, Lolly Pop Tree turquoise buttons, letter-paper story notes
+   TYPE: Fredoka for signage and questions, Nunito for reading, Caveat for the handwritten "from" lines
+   LAYOUT: setup in one column; play shows live status, scores, then wheel or question; results with a trophy */
+:root{
+  --bg:#2e5b47;--check:rgba(255,255,255,.055);--card:#fffdf8;--ink:#1d2a24;--soft:#5b6b63;--line:#e0e6e0;--tint:#f0f4ef;
+  --on:#ffffff;--pop:#45c6bf;--popInk:#032e2b;--popEdge:#22918b;--good:#2c8a48;--bad:#c93a52;--note:#fff3d6;--noteInk:#3b2f18;
+  --tape:rgba(255,236,170,.78);--ring:#e23d5c;
+  --f-display:'Fredoka','Baloo 2',system-ui,sans-serif;--f-body:'Nunito',system-ui,sans-serif;--f-hand:'Caveat','Segoe Print','Bradley Hand',cursive;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#132a20;--check:rgba(255,255,255,.035);--card:#1c3129;--ink:#e8f1ec;--soft:#a5b8ae;--line:#30493d;--tint:#24392f;
+  --good:#6fd28a;--bad:#ff8196;--note:#3a3322;--noteInk:#f2e6c8;--tape:rgba(240,214,140,.55);--ring:#ff6b86;color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#132a20;--check:rgba(255,255,255,.035);--card:#1c3129;--ink:#e8f1ec;--soft:#a5b8ae;--line:#30493d;--tint:#24392f;
+  --good:#6fd28a;--bad:#ff8196;--note:#3a3322;--noteInk:#f2e6c8;--tape:rgba(240,214,140,.55);--ring:#ff6b86;color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background-color:var(--bg);background-image:repeating-linear-gradient(0deg,var(--check) 0 22px,transparent 22px 44px),repeating-linear-gradient(90deg,var(--check) 0 22px,transparent 22px 44px);color:var(--on);font:17px/1.5 var(--f-body);overflow-x:clip;min-height:100vh}
+.app{max-width:780px;margin:0 auto;padding-block:clamp(16px,3vw,36px) 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1{font:700 clamp(40px,8.4vw,62px)/1 var(--f-display);margin:0;text-wrap:balance;letter-spacing:-.01em}
+.tag{margin:10px 0 0;font-size:clamp(16px,2.4vw,18px);opacity:.95;max-width:44ch}
+.hero{display:grid;grid-template-columns:minmax(0,1fr) clamp(112px,30vw,210px);gap:clamp(12px,3vw,32px);align-items:center;margin-bottom:22px}
+.mini,.wheel{position:relative;aspect-ratio:1;max-width:100%}
+.mini svg,.wheel svg{display:block;width:100%;height:100%;filter:drop-shadow(0 12px 16px rgba(0,0,0,.28))}
+.wheel{width:min(84vw,350px);margin:10px auto 20px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.ptr{--s:18px;position:absolute;left:50%;top:calc(var(--s)*-.4);transform:translateX(-50%);width:0;height:0;border-left:var(--s) solid transparent;border-right:var(--s) solid transparent;border-top:calc(var(--s)*1.6) solid var(--pop);filter:drop-shadow(0 3px 2px rgba(0,0,0,.3));z-index:1}
+.mini .ptr{--s:11px}
+.snap{position:relative;margin:0 auto 26px;max-width:620px;background:#fff;padding:10px 10px 4px;border-radius:4px;box-shadow:0 18px 34px -16px rgba(0,0,0,.55);transform:rotate(-1.2deg)}
+.snap img{display:block;width:100%;height:auto;border-radius:2px}
+.snap figcaption{font:700 clamp(22px,4vw,28px)/1.2 var(--f-hand);color:#2a2a2a;text-align:center;padding:6px 4px 4px}
+.snap::before,.snap::after{content:"";position:absolute;top:-12px;width:96px;height:26px;background:var(--tape);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.snap::before{left:18px;transform:rotate(-8deg)}.snap::after{right:18px;transform:rotate(7deg)}
+.live{display:inline-flex;align-items:center;gap:8px;min-height:32px;padding:4px 12px;border-radius:999px;background:rgba(255,255,255,.16);font-weight:800;font-size:14px;margin-bottom:12px}
+.live i{width:9px;height:9px;border-radius:50%;background:#a9c3b6;flex:none}
+.live.on i{background:#4ce38a;box-shadow:0 0 0 4px rgba(76,227,138,.25)}
+.live.watch i{background:var(--pop)}
+.card{background:var(--card);color:var(--ink);border-radius:22px;padding:clamp(16px,4vw,28px);box-shadow:0 18px 40px -20px rgba(0,0,0,.5)}
+.setup h2{font:600 23px/1.2 var(--f-display);margin:0 0 10px}
+.setup h2:not(:first-child){margin-top:24px}
+.pr{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.d{width:16px;height:16px;border-radius:50%;flex:none;box-shadow:0 0 0 2px rgba(0,0,0,.08)}
+input{flex:1;width:100%;min-height:50px;padding:0 12px;font:700 17px var(--f-body);color:var(--ink);background:var(--tint);border:2px solid var(--line);border-radius:12px}
+.lv{flex:none;min-width:108px;min-height:46px;padding:0 10px;border-radius:12px;border:2px solid var(--line);background:var(--card);color:var(--ink);font:800 14px var(--f-body);cursor:pointer}
+.lv.I{background:color-mix(in srgb,var(--ink) 12%,var(--card))}.lv.X{background:var(--ink);color:var(--card);border-color:var(--ink)}
+.x{width:46px;height:46px;flex:none;border-radius:12px;border:0;background:var(--tint);color:var(--ink);font:700 24px/1 var(--f-body);cursor:pointer}
+.x:disabled{opacity:.35;cursor:default}
+.seg{display:flex;gap:8px}
+.seg button{flex:1;min-height:50px;border-radius:12px;border:2px solid var(--line);background:var(--card);color:var(--ink);font:600 21px var(--f-display);cursor:pointer}
+.seg button[aria-pressed=true]{background:var(--ink);color:var(--card);border-color:var(--ink)}
+.cats{display:flex;flex-wrap:wrap;gap:8px}
+.cat{display:flex;align-items:center;gap:8px;min-height:44px;padding:0 14px 0 10px;border-radius:999px;border:2px solid var(--line);background:var(--card);color:var(--ink);font:700 15px var(--f-body);cursor:pointer}
+.cat[aria-pressed=true]{background:var(--c);border-color:var(--c);color:var(--t)}
+.cat[aria-pressed=true] .d{background:#fff!important}
+.hint{margin:8px 0 0;color:var(--soft);font-size:14px}
+.note{margin:14px 0 0;padding:12px 14px;border-radius:14px;background:var(--tint);color:var(--ink);font-size:15px}
+.btn{min-height:50px;padding:0 20px;border-radius:14px;border:0;font:600 20px var(--f-display);cursor:pointer;background:var(--pop);color:var(--popInk);box-shadow:0 4px 0 var(--popEdge)}
+.btn:active{transform:translateY(2px);box-shadow:0 2px 0 var(--popEdge)}
+.btn:disabled{opacity:.55;cursor:default;transform:none}
+.btn.big{display:block;width:100%;min-height:60px;font-size:25px}
+.btn.add{background:transparent;color:var(--ink);border:2px dashed var(--line);box-shadow:none;font:700 16px var(--f-body);min-height:46px;width:100%}
+.btn.alt,.btn.tool{background:var(--tint);color:var(--ink);box-shadow:none}
+.btn.tool{font:700 15px var(--f-body);min-height:44px;padding:0 14px}
+#start{margin-top:22px}#add{margin-top:10px}
+.board{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px}
+.pc{display:flex;align-items:center;gap:8px;min-height:40px;padding:4px 14px 4px 10px;border-radius:999px;background:rgba(255,255,255,.16);font-weight:800}
+.pc.on{background:var(--card);color:var(--ink)}
+.board.many{gap:6px}.board.many .pc{min-height:34px;padding:2px 10px 2px 8px;font-size:14px;gap:6px}.board.many .st{font-size:16px}.board.many .d{width:12px;height:12px}
+.st{font:600 19px var(--f-display);white-space:nowrap;font-variant-numeric:tabular-nums}
+.round{margin:14px 0 0;text-align:center;font-weight:800;opacity:.9}
+.who{font:600 clamp(28px,6.5vw,42px)/1.1 var(--f-display);margin:2px 0 4px;text-align:center;text-wrap:balance}
+#spin{max-width:350px;margin:0 auto}
+.qcard{margin-top:12px}
+.qtop{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px}
+.chipc{padding:4px 14px;border-radius:999px;font:800 15px var(--f-body)}
+.qwho{color:var(--soft);font-weight:700;font-size:15px}
+.qphoto{margin:14px 0 0;border-radius:14px;overflow:hidden;background:var(--tint)}
+.qphoto img{display:block;width:100%;height:auto}
+.qtext{font:600 clamp(25px,5.4vw,33px)/1.2 var(--f-display);margin:12px 0 14px;text-wrap:balance}
+.tools{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.opts{display:grid;gap:10px}
+@media(min-width:640px){.opts{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+.opt{display:flex;align-items:center;gap:12px;width:100%;min-height:60px;padding:10px 14px;border-radius:14px;border:2px solid var(--line);background:var(--card);color:var(--ink);font:700 19px/1.25 var(--f-body);text-align:left;cursor:pointer}
+.opt .k{flex:none;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--tint);font:600 19px var(--f-display)}
+.opt:disabled{cursor:default}
+.opt.good{border-color:var(--good);background:color-mix(in srgb,var(--good) 15%,var(--card))}
+.opt.good .k{background:var(--good);color:#fff}
+.opt.bad{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 13%,var(--card))}
+.opt.bad .k{background:var(--bad);color:#fff}
+.opt.gone{opacity:.28}
+.verdict{font:600 29px/1.15 var(--f-display);margin:18px 0 10px}
+.yes{color:var(--good)}.no{color:var(--bad)}
+.story{margin:0 0 14px;padding:16px 18px 12px;border-radius:6px 16px 16px 6px;background:var(--note);color:var(--noteInk);background-image:repeating-linear-gradient(180deg,transparent 0 27px,color-mix(in srgb,var(--noteInk) 12%,transparent) 27px 28px);border-left:5px solid #e9a7b2}
+.story b{font:600 19px var(--f-display);display:block;margin-bottom:4px}
+.story .from{display:block;margin-top:8px;font:700 23px/1.15 var(--f-hand)}
+.calbox{position:relative;margin:0 0 16px;border-radius:14px;overflow:hidden;border:2px solid var(--line)}
+.calwrap{position:relative}.calbox img{display:block;width:100%;height:auto}
+.calring{position:absolute;border:4px solid var(--ring);border-radius:10px;box-shadow:0 0 0 4px color-mix(in srgb,var(--ring) 30%,transparent);animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 9px color-mix(in srgb,var(--ring) 0%,transparent)}}
+.calcap{padding:8px 14px;background:var(--card);border-top:2px solid var(--line);font:700 22px/1.1 var(--f-hand);color:var(--ink)}
+.quit{display:block;margin:22px auto 0;min-height:44px;padding:0 12px;background:transparent;border:0;color:var(--on);font:700 16px var(--f-body);text-decoration:underline;cursor:pointer;opacity:.9}
+.endc{text-align:center}
+.endc h2{font:700 clamp(34px,7vw,48px)/1.05 var(--f-display);margin:6px 0 4px;text-wrap:balance}
+.endc .sub{margin:0;color:var(--soft);font-weight:700}
+.rank{list-style:none;padding:0;margin:18px 0 22px;display:grid;gap:8px;text-align:left}
+.rank li{display:flex;align-items:center;gap:12px;min-height:56px;padding:8px 16px;border-radius:14px;background:var(--tint);font-weight:800;font-size:18px}
+.rank li.top{background:color-mix(in srgb,var(--pop) 30%,var(--card))}
+.pl{font:600 23px var(--f-display);width:24px}
+.rank .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row{display:grid;gap:10px}
+.endsnap{margin:4px auto 18px;max-width:420px;transform:rotate(1.4deg)}
+:focus-visible{outline:3px solid var(--pop);outline-offset:2px}
+@media(prefers-reduced-motion:reduce){.wheel svg{transition:none!important}.calring{animation:none}}
+@media(max-width:520px){.lv{min-width:96px}.snap::before,.snap::after{width:70px}}
+
+
+.links{text-align:center;margin:18px 0 0;font-weight:700;font-size:15px}
+.links a{color:var(--on);opacity:.9}
+.qphoto img{max-height:56vh;width:auto;max-width:100%;margin:0 auto}
+.opts.n3 .opt:last-child:nth-child(odd){grid-column:1/-1}
+
+</style>
+</head>
+<body>
+<div class="app">
+
+<section id="setup">
+  <header class="hero">
+    <div>
+      <h1>Pinewood Trivia</h1>
+      <p class="tag">One screen, take turns. Spin for a topic and answer questions about the family. Everyone picks Beginner, Intermediate or Expert.</p>
+    </div>
+    <div class="mini" aria-hidden="true"><i class="ptr"></i><svg id="wheel0" viewBox="0 0 320 320"></svg></div>
+  </header>
+  <figure class="snap" id="snap0" style="margin-top:0"><img id="famimg" src="img/family-2021.jpg" alt="The whole Kugler family on a grassy hill in July 2021, everyone in red, white and blue" width="1200" height="676"><figcaption>The whole gang, July 2021</figcaption></figure>
+  <p class="live" id="qstatus"><i></i><span>Loading questions…</span></p>
+  <div class="card setup">
+    <h2>Who's playing?</h2>
+    <div id="plist"></div>
+    <p class="hint">Tap a level to switch it. Beginner fits little grandkids; Expert is for Grandma, Grandpa and the original four. Up to 18 players; with a big group, try 3 questions each.</p>
+    <button class="btn add" id="add">Add a player</button>
+    <h2>Questions for each player</h2>
+    <div class="seg" id="rounds"><button data-v="3">3</button><button data-v="5">5</button><button data-v="8">8</button><button data-v="10">10</button></div>
+    <h2>Topics on the wheel</h2>
+    <div class="cats" id="cats"></div>
+    <p class="hint">Tap a topic to turn it on or off.</p>
+    <p class="note" id="snote" hidden></p>
+    <button class="btn big" id="start" disabled>Let's play!</button>
+    <button class="btn alt big" id="resume" hidden style="margin-top:10px">Back to the game in progress</button>
+  </div>
+  <p class="links"><a href="./">Play on phones instead</a> · <a href="tv.html">Open the TV screen</a></p>
+</section>
+
+<section id="play" hidden>
+  <div class="board" id="board"></div>
+  <div id="spinView">
+    <p class="round" id="round"></p>
+    <h2 class="who" id="who"></h2>
+    <div class="wheel" id="wheelBox"><i class="ptr"></i><svg id="wheel" viewBox="0 0 320 320" aria-label="Topic wheel"></svg></div>
+    <button class="btn big" id="spin">Spin!</button>
+  </div>
+  <div id="qView" hidden>
+    <div class="card qcard">
+      <div class="qtop"><span class="chipc" id="qcat"></span><span class="qwho" id="qwho"></span></div>
+      <div class="qphoto" id="qphoto" hidden><img id="qimg" alt=""></div>
+      <p class="qtext" id="qtext"></p>
+      <div class="tools"><button class="btn tool" id="read">Read it to me</button><button class="btn tool" id="fifty">50/50 helper</button></div>
+      <div class="opts" id="opts"></div>
+      <div id="result" hidden aria-live="polite">
+        <p class="verdict" id="verdict"></p>
+        <div class="story"><b>Story time</b><span id="fact"></span><span class="from" id="ref"></span></div>
+        <div class="calbox" id="calbox" hidden><div class="calwrap"><img id="calimg" alt=""><i class="calring" id="calring"></i></div><div class="calcap" id="calcap"></div></div>
+        <button class="btn big" id="next">Next</button>
+      </div>
+    </div>
+  </div>
+  <button class="quit" id="quit">End game</button>
+</section>
+
+<section id="end" hidden>
+  <div class="card endc">
+    <svg viewBox="0 0 120 112" width="112" height="104" aria-hidden="true"><path d="M30 26H15c0 18 8 28 19 30M90 26h15c0 18-8 28-19 30" fill="none" stroke="#1f9e97" stroke-width="7" stroke-linecap="round"/><path d="M28 14h64v26c0 21-14 37-32 37S28 61 28 40z" fill="#45c6bf"/><path d="M60 14h32v26c0 21-14 37-32 37z" fill="#2fb0a9"/><path d="M42 24v20" stroke="#fff" stroke-opacity=".7" stroke-width="6" stroke-linecap="round"/><rect x="52" y="76" width="16" height="14" fill="#1f9e97"/><rect x="34" y="90" width="52" height="14" rx="5" fill="#8a5a2b"/></svg>
+    <h2 id="champ"></h2>
+    <p class="sub" id="endsub"></p>
+    <ol class="rank" id="rank"></ol>
+    <figure class="snap endsnap"><img id="kidsimg" src="img/grandkids-2021.jpg" alt="Grandma and Grandpa with eleven grandkids, July 2021" width="1000" height="677"><figcaption>“Stick together &amp; be a family that I dreamed about.” Grandma Delpha</figcaption></figure>
+    <div class="row"><button class="btn big" id="again">Play again</button><button class="btn alt" id="toSetup">Change players or topics</button></div>
+  </div>
+</section>
+
+</div>
+<script type="module" src="classic.js"></script>
+</body>
+</html>

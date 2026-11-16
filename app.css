@@ -9,6 +9,14 @@
 *{box-sizing:border-box;min-width:0}
 html,body{margin:0;height:100%}
 body{background-color:var(--bg);background-image:repeating-linear-gradient(0deg,var(--check) 0 22px,transparent 22px 44px),repeating-linear-gradient(90deg,var(--check) 0 22px,transparent 22px 44px);color:var(--on);font:17px/1.45 var(--fb);overflow-x:hidden}
+/* The July 2021 family photo sits behind everything, under a pine-green veil and the gingham, so text stays readable.
+   It shows through more in the TV lobby and is darkest on phones. */
+body::before{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;--veil:rgba(30,64,49,.84);--check:rgba(255,255,255,.03);
+  background-image:repeating-linear-gradient(0deg,var(--check) 0 22px,transparent 22px 44px),repeating-linear-gradient(90deg,var(--check) 0 22px,transparent 22px 44px),linear-gradient(var(--veil),var(--veil)),url(img/family-2021.jpg);
+  background-size:auto,auto,auto,cover;background-position:0 0,0 0,0 0,center 30%;background-repeat:repeat,repeat,no-repeat,no-repeat}
+body.tv[data-game="lobby"]::before{--veil:rgba(30,64,49,.58)}
+body.phone::before{--veil:rgba(30,64,49,.86)}
+body.tv[data-game="lobby"] .joinpanel h1,body.tv[data-game="lobby"] .joinpanel p,body.tv[data-game="lobby"] .cstatus,body.tv[data-game="lobby"] .brand{text-shadow:0 2px 12px rgba(10,30,22,.85),0 0 2px rgba(10,30,22,.7)}
 button{font:inherit;cursor:pointer}
 :focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 [hidden]{display:none!important}
@@ -182,3 +190,22 @@ body:has(#jf) .hostlink{display:block}
 .pen i{display:block;border-radius:50%;background:#fff}
 .row{display:flex;gap:8px}.row .go{margin-left:auto}
 @media(max-width:700px){.tv .lobby,.finalwrap,.spinwrap,.artrow{grid-template-columns:1fr}.tvopts,.choices.wide,.quiprow{grid-template-columns:1fr}}
+
+/* ---- 50/50 helper, read-aloud, trophy ending ---- */
+.tvopt.gone{opacity:.22;filter:grayscale(.6)}
+.asktop{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.asktop .chipc{margin:0}
+.asktop .say{margin-left:auto;font-size:15px;min-height:38px}
+.helper{margin:0;font-weight:800;color:var(--gold)}
+.ptools{display:flex;gap:10px;align-items:center;margin:0 0 12px}
+.ptools .ghost{flex:1;min-height:48px;font-size:16px}
+.ptools .used{flex:1;text-align:center;font-weight:800;opacity:.7}
+.popt.gone{opacity:.25;filter:grayscale(.7)}
+.finalmain{display:grid;gap:2vh}
+.champ{display:flex;align-items:center;gap:1.4vw}
+.champ .kick{margin:0}
+.champ h2{margin:0;font:700 clamp(36px,4.2vw,80px)/1.05 var(--fd);color:var(--gold);text-shadow:0 3px 14px rgba(10,30,22,.6)}
+.trophy{width:clamp(80px,8vw,150px);height:auto;flex:none;filter:drop-shadow(0 10px 14px rgba(0,0,0,.35))}
+.res .trophy{width:96px;display:block;margin:0 auto 6px}
+.gcard.classic .go{text-decoration:none;display:inline-flex;align-items:center}
+.hostlink a{color:inherit}

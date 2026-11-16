@@ -199,6 +199,7 @@ function renderLobby() {
         <div id="qr" class="qr" aria-label="QR code to join"></div>
       </div>
       <div id="lplayers" class="lplayers"></div>
+      <figure class="lsnap" aria-hidden="true"><div class="pol"><img src="img/family-2021.jpg" alt=""><span>The whole gang, July 2021</span></div></figure>
     </section>
     <section class="menu" aria-label="Games">
       <h2 class="menuhead">Pick a game</h2>

@@ -1,5 +1,5 @@
 // Shared helpers for the TV and phone pages.
-import { SHEET_ID } from './config.js';
+import { SHEET_ID } from './config.js?v=20261116';
 
 export const $ = (s, el = document) => el.querySelector(s);
 export const $$ = (s, el = document) => [...el.querySelectorAll(s)];

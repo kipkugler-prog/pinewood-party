@@ -1,6 +1,6 @@
 // Realtime transport. Production uses Firebase Realtime Database with anonymous sign-in.
 // "?dev=1" uses a tiny local WebSocket server (devserver.js) so the whole game can be tested offline.
-import { FIREBASE } from './config.js';
+import { FIREBASE } from './config.js?v=20261116';
 
 const FB = 'https://www.gstatic.com/firebasejs/10.12.2/';
 

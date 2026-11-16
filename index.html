@@ -3,16 +3,24 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#2e5b47">
+<meta name="theme-color" content="#1b3d2e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pinewood Party">
 <title>Pinewood Party</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="app.css">
+<link rel="stylesheet" href="app.css?v=20261116">
+<link rel="stylesheet" href="phone.css?v=20261116">
 </head>
 <body class="phone">
-<div id="app" class="papp"><div class="wait"><h2>Loading…</h2></div></div>
-<p class="hostlink"><a href="tv.html">Hosting on a TV? Open the TV screen</a><br><a href="classic.html">No phones? Play Pinewood Trivia Classic on one screen</a></p>
-<script type="module" src="phone.js"></script>
+<div id="app" class="papp"><div class="wait"><div class="dots"><i></i><i></i><i></i></div><h2>Loading…</h2></div></div>
+<nav class="hostlink" aria-label="Other ways to play">
+  <a href="tv.html"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5" width="19" height="12.5" rx="2.5"/><path d="M8 21h8"/></svg><span>Hosting on a TV? <b>Open the TV screen</b></span></a>
+  <a href="classic.html"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18M5.6 5.6l12.8 12.8M18.4 5.6 5.6 18.4"/></svg><span>No phones? <b>Play Pinewood Trivia Classic</b></span></a>
+</nav>
+<script type="module" src="phone.js?v=20261116"></script>
 </body>
 </html>

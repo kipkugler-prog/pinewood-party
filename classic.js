@@ -1,6 +1,6 @@
 // Pinewood Trivia Classic: the original one-screen game. Players take turns on one device, spin the topic wheel,
 // and answer a question at their own level. Questions come from the same Google Sheet as the party games.
-import { loadContent, imgURL, calRing, MONTHS, LEVELS, PCOLORS, esc, shuffle, pick, rid } from './common.js';
+import { loadContent, imgURL, calRing, MONTHS, LEVELS, PCOLORS, esc, shuffle, pick, rid } from './common.js?v=20261116';
 
 const $ = id => document.getElementById(id);
 const NEXT = { B: 'I', I: 'X', X: 'B' }, okL = l => LEVELS[l] ? l : 'I';

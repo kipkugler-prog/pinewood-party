@@ -7,11 +7,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="app.css">
+<link rel="stylesheet" href="app.css?v=20261116">
+<link rel="stylesheet" href="tv.css?v=20261116">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body class="tv">
-<header class="tvbar"><span class="brand">Pinewood Party</span><span id="gname" class="gname"></span><span id="timer" class="timer" hidden></span></header>
+<header class="tvbar"><span class="brand"><svg class="pine" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 6.5 9.5h3L5 15.5h4L4 21h16l-5-5.5h4l-4.5-6h3z" fill="currentColor"/><rect x="10.6" y="20" width="2.8" height="3" rx=".6" fill="currentColor"/></svg>Pinewood Party</span><span id="gname" class="gname"></span><span id="timer" class="timer" hidden></span></header>
 <main id="stage" class="stage"></main>
 <footer class="tvfoot">
   <div id="joinbar" class="joinbar" hidden></div>
@@ -19,6 +20,6 @@
   <div id="ctrl" class="ctrl" hidden><button id="next" class="ghost">Next</button><button id="end" class="ghost">End game</button></div>
   <button id="newroom" class="ghost tiny">New room</button>
 </footer>
-<script type="module" src="host.js"></script>
+<script type="module" src="host.js?v=20261116"></script>
 </body>
 </html>

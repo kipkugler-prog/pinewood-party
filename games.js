@@ -1,6 +1,6 @@
 // The seven games. Each game has host logic (start/next, run only on the TV) and two views: tv() and phone().
 // The TV is the referee: it writes the game state; phones only send their own answers.
-import { esc, shuffle, pick, norm, arr, obj, ANS, LEVELS, imgURL, calRing, MONTHS, avatar } from './common.js';
+import { esc, shuffle, pick, norm, arr, obj, ANS, LEVELS, imgURL, calRing, MONTHS, avatar } from './common.js?v=20261116';
 
 const T = { ask: 20, spinAsk: 30, draw: 90, title: 45, vote: 25, write: 50, quipWrite: 90, quipVote: 15, truths: 30, guess: 20 };
 const speedPts = (t, t0, dur) => 500 + Math.round(500 * Math.max(0, Math.min(1, 1 - ((t || 0) - t0) / (dur * 1000))));
@@ -17,19 +17,24 @@ function matchPlayer(H, person) {
 // ---------- shared view pieces ----------
 const big = (t, cls = '') => `<h2 class="qbig ${cls}">${esc(t)}</h2>`;
 const kicker = t => `<p class="kick">${esc(t)}</p>`;
+const SAY = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4.2 4.2 0 0 1 0 6M18.3 6.5a8 8 0 0 1 0 11"/></svg>';
+const sayBtn = () => `<button class="ghost say" data-say>${SAY}Read it out loud</button>`;
 function optsTV(opts, { right = -1, counts = null, pickers = null, P = {}, gone = [] } = {}) {
-  return `<div class="tvopts n${opts.length}">${opts.map((o, i) => {
+  return `<div class="tvopts n${opts.length}${right >= 0 ? ' revealed' : ''}">${opts.map((o, i) => {
     const st = right < 0 ? (arr(gone).includes(i) ? ' gone' : '') : (i === right ? ' right' : ' wrong');
-    const who = pickers ? `<span class="who">${arr(pickers[i]).map(u => avatar(P[u], 'sm')).join('')}</span>` : '';
-    return `<div class="tvopt${st}" style="--ac:${ANS[i].c}"><b>${ANS[i].k}</b><span>${esc(o)}</span>${counts ? `<em>${counts[i] || 0}</em>` : ''}${who}</div>`;
+    const ps = pickers ? arr(pickers[i]) : [];
+    const who = ps.length ? `<span class="who">${ps.slice(0, 6).map(u => avatar(P[u], 'sm')).join('')}${ps.length > 6 ? `<span class="more">+${ps.length - 6}</span>` : ''}</span>` : '';
+    return `<div class="tvopt${st}" style="--ac:${ANS[i].c}"><b>${ANS[i].k}</b><span class="t">${esc(o)}</span>${counts ? `<em>${counts[i] || 0}</em>` : ''}${who}</div>`;
   }).join('')}</div>`;
 }
-function storyBox(story, src, img, cal) {
+// story note + taped snapshot; `extra` (e.g. who scored) sits under the note so the photo can take the right side
+function storyBox(story, src, img, cal, extra = '') {
   let pic = '';
-  if (cal && img) pic = `<figure class="cal"><div class="calwrap"><img src="${esc(imgURL(img))}" alt="Grandma's 2027 calendar, ${MONTHS[cal[0] - 1]}"><i class="ring" style="${calRing(cal[0], cal[1])}"></i></div><figcaption>Grandma's calendar: ${MONTHS[cal[0] - 1]} ${cal[1]}</figcaption></figure>`;
-  else if (img) pic = `<figure class="pic"><img src="${esc(imgURL(img))}" alt=""></figure>`;
-  if (!story && !pic) return '';
-  return `<div class="storyrow">${story ? `<div class="story"><b>Story time</b><p>${esc(story)}</p>${src ? `<span class="from">From ${esc(src)}</span>` : ''}</div>` : ''}${pic}</div>`;
+  if (cal && img) pic = `<figure class="cal snap"><div class="calwrap"><img src="${esc(imgURL(img))}" alt="Grandma's 2027 calendar, ${MONTHS[cal[0] - 1]}"><i class="ring" style="${calRing(cal[0], cal[1])}"></i></div><figcaption>Grandma's calendar: ${MONTHS[cal[0] - 1]} ${cal[1]}</figcaption></figure>`;
+  else if (img) pic = `<figure class="pic snap"><img src="${esc(imgURL(img))}" alt=""></figure>`;
+  if (!story && !pic) return extra;
+  const note = story ? `<div class="story"><b>Story time</b><p>${esc(story)}</p>${src ? `<span class="from">From ${esc(src)}</span>` : ''}</div>` : '';
+  return `<div class="storyrow${pic ? ' haspic' : ''}"><div class="storycol">${note}${extra}</div>${pic}</div>`;
 }
 function gainsList(gains, P, max = 18) {
   const rows = Object.entries(obj(gains)).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).slice(0, max);
@@ -47,17 +52,59 @@ export function rankTV(scores, P, title = 'Scores', max = 10) {
   const rows = Object.entries(obj(scores)).sort((a, b) => b[1] - a[1]);
   const ps = Object.keys(P).filter(u => !(u in obj(scores))).map(u => [u, 0]);
   const all = rows.concat(ps).slice(0, max);
-  return `<div class="rank"><h2>${esc(title)}</h2><ol>${all.map(([u, v], i) => `<li class="${i === 0 && v > 0 ? 'top' : ''}"><span class="pl">${i + 1}</span>${avatar(P[u])}<span class="nm">${esc(nameOf(P, u))}</span><b>${v.toLocaleString()}</b></li>`).join('')}</ol></div>`;
+  return `<div class="rank n${all.length}"><h2>${esc(title)}</h2><ol>${all.map(([u, v], i) => `<li class="${i === 0 && v > 0 ? 'top' : i < 3 && v > 0 ? 'p' + (i + 1) : ''}"><span class="pl">${i + 1}</span>${avatar(P[u])}<span class="nm">${esc(nameOf(P, u))}</span><b>${v.toLocaleString()}</b></li>`).join('')}</ol></div>`;
 }
-// phone pieces
-const wait = (t, sub = '') => `<div class="wait"><div class="dots"><i></i><i></i><i></i></div><h2>${esc(t)}</h2>${sub ? `<p>${esc(sub)}</p>` : ''}</div>`;
-const lookTV = (t = 'Eyes on the TV!') => `<div class="wait"><h2>${esc(t)}</h2></div>`;
-function choicesPhone(opts, { mine = null, off = [], q = '', tools = '' } = {}) {
-  if (mine) return `<div class="wait"><h2>Locked in!</h2><div class="lock" style="--ac:${ANS[mine.a].c}"><b>${ANS[mine.a].k}</b> ${esc(opts[mine.a])}</div><p>Waiting for everyone else…</p></div>`;
-  return `${q ? `<p class="pq">${esc(q)}</p>` : ''}${tools}<div class="popts n${opts.length}">${opts.map((o, i) => `<button class="popt${arr(off).includes(i) ? ' gone' : ''}" data-choice="${i}" style="--ac:${ANS[i].c}"${arr(off).includes(i) ? ' disabled' : ''}><b>${ANS[i].k}</b><span>${esc(o)}</span></button>`).join('')}</div>`;
+// ---------- phone pieces (styled by phone.css) ----------
+const PSVG = (d, o = '') => `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"${o}>${d}</svg>`;
+const PI = {
+  check: PSVG('<path d="M5 12.5l4.6 4.6L19 7.6"/>', ' stroke-width="3.2"'),
+  x: PSVG('<path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/>', ' stroke-width="3.2"'),
+  tv: PSVG('<rect x="2.6" y="6" width="18.8" height="12.4" rx="2.6"/><path d="M8.5 2.6 12 6l3.5-3.4M8 21.4h8"/>', ' stroke-width="2.2"'),
+  star: '<svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5-4.7-4.6 6.5-.9z"/></svg>',
+  pencil: PSVG('<path d="M4 20l1-4.2L16.3 4.5a2.1 2.1 0 0 1 3 0l.2.2a2.1 2.1 0 0 1 0 3L8.2 19z"/><path d="M14 7l3 3"/>', ' stroke-width="2.2"'),
+  say: PSVG('<path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor"/><path d="M15.5 9a4.2 4.2 0 0 1 0 6M18.3 6.5a8 8 0 0 1 0 11"/>', ' stroke-width="2.2"'),
+  half: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/></svg>',
+  laugh: PSVG('<circle cx="12" cy="12" r="9.2"/><path d="M7.6 13.2a4.6 4.6 0 0 0 8.8 0z" fill="currentColor"/><path d="M8.6 9.6h.01M15.4 9.6h.01"/>', ' stroke-width="2.4"')
+};
+const pord = n => n + ((n % 100 >= 11 && n % 100 <= 13) ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' }[n % 10] || 'th'));
+const dotsP = (c = '') => `<div class="dots${c}"><i></i><i></i><i></i></div>`;
+// a waiting screen: icon (or bouncing dots), title, and a line under it
+const wait = (t, sub = '', icon = '') => `<div class="wait${icon ? ' w-' + icon : ''}">${icon ? `<div class="wicon">${PI[icon]}</div>` : dotsP()}<h2>${esc(t)}</h2>${sub ? `<p>${esc(sub)}</p>` : ''}${icon === 'check' ? dotsP(' sm') : ''}</div>`;
+// waiting on another player: show their avatar
+const waitWho = (p, t, sub = '') => `<div class="wait w-who"><div class="wav">${avatar(p, 'lg')}</div><h2>${esc(t)}</h2>${sub ? `<p>${esc(sub)}</p>` : ''}</div>`;
+const lookTV = (t = 'Eyes on the TV!', sub = '') => `<div class="wait w-tv"><div class="wicon">${PI.tv}</div><h2>${esc(t)}</h2>${sub ? `<p>${esc(sub)}</p>` : ''}</div>`;
+// the question / prompt on a white card; long text gets a smaller size so the answers still fit
+const blanksP = s => esc(s).replace(/_{2,}/g, '<span class="blank" aria-label="blank"></span>');
+function qcard(q, { kick = '', html = '' } = {}) {
+  const n = String(q || '').length;
+  return `<div class="qcard${n > 95 ? ' long' : n > 58 ? ' mid' : ''}">${kick ? `<p class="qk">${esc(kick)}</p>` : ''}<p class="pq">${html || esc(q)}</p></div>`;
 }
-function resultPhone(ok, pts, line) {
-  return `<div class="res ${ok ? 'ok' : 'no'}"><h2>${ok ? 'Correct!' : 'Not quite'}</h2>${pts ? `<p class="pts">+${pts}</p>` : ''}${line ? `<p>${esc(line)}</p>` : ''}</div>`;
+// answer buttons. 2-4 answers: big colored buttons that share the screen. 5+: a compact list (two columns when answers are short).
+// off = removed by the 50/50 helper; own = your own fib/title (can't vote for it)
+function choicesPhone(opts, { mine = null, off = [], own = [], q = '', qhtml = '', kick = '', tools = '' } = {}) {
+  if (mine) {
+    const k = ANS[mine.a] || ANS[0];
+    return `<div class="wait w-check locked"><div class="wicon">${PI.check}</div><h2>Locked in!</h2><div class="lock${mine.a === 2 ? ' lt' : ''}" style="--ac:${k.c}"><b>${k.k}</b><span>${esc(opts[mine.a])}</span></div><p>Waiting for everyone else…</p>${dotsP(' sm')}</div>`;
+  }
+  const n = opts.length, many = n > 4, two = many && opts.every(o => String(o).length <= 15);
+  const btn = (o, i) => {
+    const gone = arr(off).includes(i), yours = arr(own).includes(i), L = String(o).length;
+    return `<button class="popt${gone ? ' gone' : ''}${yours ? ' own' : ''}${i === 2 ? ' lt' : ''}${L > 44 ? ' xl' : L > 24 ? ' l' : ''}" data-choice="${i}" style="--ac:${ANS[i].c}"${gone || yours ? ' disabled' : ''}><b>${ANS[i].k}</b><span>${esc(o)}</span>${yours ? '<em>Yours</em>' : gone ? '<em>Gone</em>' : ''}</button>`;
+  };
+  return `<div class="ask${many ? ' many' : ''}">${q || qhtml ? qcard(q, { kick, html: qhtml }) : ''}${tools}<div class="popts n${n}${many ? ' many' : ''}${two ? ' two' : ''}">${opts.map(btn).join('')}</div></div>`;
+}
+function resultPhone(ok, pts, line, title = '') {
+  return `<div class="res ${ok ? 'ok' : 'no'}"><div class="ricon">${ok ? PI.check : PI.x}</div><h2>${esc(title || (ok ? 'Correct!' : 'Not quite'))}</h2>${pts ? `<p class="pts">+${Number(pts).toLocaleString()}<small> pts</small></p>` : ''}${line ? `<p class="rline">${esc(line)}</p>` : ''}</div>`;
+}
+// text boxes for fibs, titles and quips. Only one button in the form: it sends.
+function formPhone(kind, fields, send) {
+  return `<form class="pform" data-form="${kind}">${fields.map((f, k) => `<div class="fcard">${f.kick ? `<p class="qk">${esc(f.kick)}</p>` : ''}<label for="${f.id}">${f.label}</label><input id="${f.id}" name="${f.name}" maxlength="${f.max}" autocomplete="off" autocapitalize="sentences" autocorrect="on" spellcheck="true" enterkeyhint="${k < fields.length - 1 ? 'next' : 'send'}" required placeholder="${esc(f.ph)}"></div>`).join('')}<p class="err" role="alert"></p><button class="go big">${esc(send)}</button></form>`;
+}
+// your place so far, for in-between screens
+function standingP(scores, me) {
+  const sc = obj(scores), my = sc[me] || 0;
+  if (!my) return 'The leaderboard is on the TV.';
+  return `You're in ${pord(1 + Object.values(sc).filter(v => v > my).length)} place with ${my.toLocaleString()} points.`;
 }
 
 // ---------- 1. Trivia Showdown ----------
@@ -99,15 +146,16 @@ const trivia = {
   tv(S, P) {
     const v = S.view;
     if (S.phase === 'intro') return `<div class="center">${kicker(`Question ${v.n} of ${v.of}`)}${big(v.cat || 'Family trivia', 'huge')}${v.lvl ? `<p class="lvl">${LEVELS[v.lvl]}</p>` : ''}</div>`;
-    if (S.phase === 'ask') return `<div class="askwrap"><div class="asktop"><button class="ghost say" data-say>Read it out loud</button></div>${v.img ? `<img class="qimg" src="${esc(imgURL(v.img))}" alt="">` : ''}${big(v.q)}${optsTV(v.opts)}</div>`;
-    if (S.phase === 'reveal') return `${big(v.q, 'small')}${optsTV(v.opts, { right: v.right, pickers: v.pickers, P })}${storyBox(v.story, v.src, v.img, v.cal)}${gainsList(v.gains, P, 18)}`;
+    if (S.phase === 'ask') return `<div class="askwrap"><div class="asktop">${kicker(`Question ${v.n} of ${v.of}`)}${sayBtn()}</div>${v.img ? `<img class="qimg" src="${esc(imgURL(v.img))}" alt="">` : ''}${big(v.q)}${optsTV(v.opts)}</div>`;
+    if (S.phase === 'reveal') return `${kicker(`Question ${v.n} of ${v.of} · the answer`)}${big(v.q, 'small')}${optsTV(v.opts, { right: v.right, pickers: v.pickers, P })}${storyBox(v.story, v.src, v.img, v.cal, gainsList(v.gains, P, 18))}`;
     if (S.phase === 'scores') return rankTV(S.g.scores, P, 'Leaderboard');
   },
   phone(S, me, mine) {
     const v = S.view;
     if (S.phase === 'ask') return choicesPhone(v.opts, { mine, q: v.q });
-    if (S.phase === 'reveal') { const pts = obj(v.gains)[me]; const picked = arr(v.pickers).findIndex(a => arr(a).includes(me)); return resultPhone(!!pts, pts, picked < 0 ? `No answer. It was ${v.opts[v.right]}.` : pts ? '' : `It was ${v.opts[v.right]}.`); }
-    if (S.phase === 'intro') return lookTV(`Question ${v.n} of ${v.of}`);
+    if (S.phase === 'reveal') { const pts = obj(v.gains)[me]; const picked = arr(v.pickers).findIndex(a => arr(a).includes(me)); return resultPhone(!!pts, pts, picked < 0 ? `No answer. It was ${v.opts[v.right]}.` : pts ? 'Faster right answers score more.' : `It was ${v.opts[v.right]}.`, picked < 0 ? 'Time’s up!' : ''); }
+    if (S.phase === 'intro') return lookTV(`Question ${v.n} of ${v.of}`, v.cat ? `Category: ${v.cat}. Get ready!` : 'Get ready!');
+    if (S.phase === 'scores') return lookTV('Leaderboard!', standingP(S.g && S.g.scores, me));
     return lookTV();
   }
 };
@@ -177,7 +225,8 @@ const spin = {
       const m = n === 1 ? 0 : i * a + a / 2, [tx, ty] = pt(m, R * .6), r2 = n === 1 ? 0 : (m <= 180 ? m - 90 : m + 90);
       s += `<text x="${tx}" y="${ty}" transform="rotate(${r2.toFixed(1)} ${tx} ${ty})" text-anchor="middle" dominant-baseline="central" fill="${c.t || '#fff'}" font-family="Fredoka,sans-serif" font-weight="600" font-size="${String(c.short).length > 8 ? 15 : 19}">${esc(c.short)}</text>`;
     });
-    s += '<circle cx="160" cy="160" r="27" fill="#fff"/><circle cx="160" cy="160" r="13" fill="#45c6bf"/>';
+    if (n > 1) for (let i = 0; i < n; i++) { const [px, py] = pt(i * a, 154.5); s += `<circle cx="${px}" cy="${py}" r="3.2" fill="#ffd23f" stroke="#c99a12" stroke-width="1"/>`; }
+    s += '<circle cx="160" cy="160" r="29" fill="#fff" stroke="rgba(0,0,0,.08)" stroke-width="2"/><circle cx="160" cy="160" r="15" fill="#45c6bf"/><circle cx="155" cy="155" r="4.5" fill="#fff" fill-opacity=".55"/>';
     return `<div class="wheel"><i class="ptr"></i><svg viewBox="0 0 320 320" data-to="${to}" style="transform:rotate(${from}deg)">${s}</svg></div>`;
   },
   tv(S, P) {
@@ -186,20 +235,23 @@ const spin = {
       const w = this.wheelSVG(g.cats, S.phase === 'spinning' ? v.from : v.rot, v.rot);
       return `<div class="spinwrap">${w}<div>${kicker(`Turn ${v.turn} of ${v.of}`)}<h2 class="qbig">${S.phase === 'spin' ? `${who}, tap <u>Spin</u> on your phone!` : `${who} is spinning…`}</h2><p class="lvl">${LEVELS[(P[v.cur] && P[v.cur].level) || 'I']} level</p></div></div>`;
     }
-    if (S.phase === 'ask') return `<div class="askwrap"><div class="asktop"><p class="chipc" style="--cc:${v.catColor}">${esc(v.cat)} · ${esc(who)}'s ${LEVELS[v.lvl]} question</p>${arr(v.gone).length ? '<p class="helper">50/50 helper used</p>' : ''}<button class="ghost say" data-say>Read it out loud</button></div>${v.img ? `<img class="qimg" src="${esc(imgURL(v.img))}" alt="">` : ''}${big(v.q)}${optsTV(v.opts, { gone: v.gone })}</div>`;
+    if (S.phase === 'ask') return `<div class="askwrap"><div class="asktop"><p class="chipc" style="--cc:${v.catColor}">${esc(v.cat)} · ${esc(who)}'s ${LEVELS[v.lvl]} question</p>${arr(v.gone).length ? '<p class="helper">50/50 helper used</p>' : ''}${sayBtn()}</div>${v.img ? `<img class="qimg" src="${esc(imgURL(v.img))}" alt="">` : ''}${big(v.q)}${optsTV(v.opts, { gone: v.gone })}</div>`;
     if (S.phase === 'reveal') return `<p class="verdict ${v.ok ? 'yes' : 'no'}">${v.ok ? `${who} got it! +1,000` : v.picked < 0 ? `Time's up! The answer is ${esc(v.opts[v.right])}.` : `Not quite! The answer is ${esc(v.opts[v.right])}.`}</p>${big(v.q, 'small')}${optsTV(v.opts, { right: v.right })}${storyBox(v.story, v.src, v.img, v.cal)}`;
   },
-  phone(S, me, mine) {
-    const v = S.view;
-    if (v.cur !== me) return S.phase === 'reveal' ? lookTV() : wait(`${S.phase === 'ask' ? 'Watch the TV' : 'Not your turn yet'}`, 'Cheer them on!');
-    if (S.phase === 'spin') return mine ? wait('Spinning…') : `<div class="center"><h2 class="pbig">Your turn!</h2><button class="spinbtn" data-choice="0">Spin!</button></div>`;
+  phone(S, me, mine, P = {}) {
+    const v = S.view, who = nameOf(P, v.cur);
+    if (v.cur !== me) {
+      if (S.phase === 'reveal') return lookTV(v.ok ? `${who} got it!` : 'Eyes on the TV!', v.ok ? 'Give them a cheer.' : `The answer was ${v.opts[v.right]}.`);
+      return waitWho(P[v.cur], S.phase === 'ask' ? `${who} is answering` : S.phase === 'spinning' ? `${who} is spinning…` : `${who}'s turn`, S.phase === 'ask' ? 'Watch the TV and cheer them on!' : 'Cheer them on! Your turn is coming.');
+    }
+    if (S.phase === 'spin') return mine ? wait('Spinning…', 'Watch the wheel on the TV') : `<div class="spinme"><h2>Your turn!</h2><button class="spinbtn" data-choice="0" aria-label="Spin the wheel"><span>Spin!</span></button><p>Tap the wheel. It spins on the TV.</p></div>`;
     if (S.phase === 'spinning') return wait('Spinning…', 'Watch the wheel on the TV');
     if (S.phase === 'ask') {
       const used = !!obj(S.g && S.g.fifty)[me] || arr(v.gone).length > 0, canFifty = !used && v.opts.length > 2;
-      const tools = mine ? '' : `<div class="ptools">${canFifty ? '<button class="ghost" data-fifty>50/50 helper</button>' : '<span class="used">50/50 used</span>'}<button class="ghost" data-say>Read it to me</button></div>`;
-      return choicesPhone(v.opts, { mine, q: v.q, off: arr(v.gone), tools });
+      const tools = mine ? '' : `<div class="ptools">${canFifty ? `<button class="ghost tool fifty" data-fifty>${PI.half}50/50 helper</button>` : `<span class="tool used">${PI.half}50/50 used</span>`}<button class="ghost tool" data-say>${PI.say}Read it to me</button></div>`;
+      return choicesPhone(v.opts, { mine, q: v.q, kick: `${v.cat} · ${LEVELS[v.lvl] || ''}`, off: arr(v.gone), tools });
     }
-    if (S.phase === 'reveal') return resultPhone(v.ok, v.ok ? 1000 : 0, v.ok ? '' : `It was ${v.opts[v.right]}.`);
+    if (S.phase === 'reveal') return resultPhone(v.ok, v.ok ? 1000 : 0, v.ok ? 'Nice spin!' : `It was ${v.opts[v.right]}.`, v.ok ? '' : v.picked < 0 ? 'Time’s up!' : '');
     return lookTV();
   }
 };
@@ -261,21 +313,27 @@ const doodle = {
   phone(S, me, mine, P) {
     const v = S.view, g = S.g;
     if (S.phase === 'draw') {
-      if (!g.prompts[me]) return wait('Drawings are underway', 'You’ll join the next game');
-      if (mine) return wait('Nice work!', 'Waiting for the other artists…');
-      return `<div class="drawbox"><p class="prompt">Draw: <b>${esc(g.prompts[me])}</b></p><canvas id="pad" width="1000" height="1000"></canvas><div class="inks" id="inks"></div><div class="row"><button class="ghost" id="undo">Undo</button><button class="ghost" id="clear">Clear</button><button class="go" id="done">I'm done</button></div></div>`;
+      if (!g.prompts[me]) return wait('Drawings are underway', 'You’ll join the next game', 'pencil');
+      if (mine) return wait('Nice work!', 'Waiting for the other artists…', 'check');
+      return `<div class="drawbox"><p class="prompt"><small>Your secret prompt · shh!</small><b>${esc(g.prompts[me])}</b></p><canvas id="pad" width="1000" height="1000" aria-label="Drawing pad"></canvas><div class="dtools"><div class="inks" id="inks"></div><div class="dline"><div class="pens" id="pens"></div><button type="button" class="ghost dbtn" id="undo">Undo</button><button type="button" class="ghost dbtn" id="clear">Clear</button></div></div><button type="button" class="go big" id="done">I'm done</button></div>`;
     }
     if (S.phase === 'title') {
-      if (v.artist === me) return wait('That’s your drawing!', 'Keep a straight face while everyone writes titles.');
-      if (mine) return wait('Got it!', 'Waiting for the others…');
-      return `<form class="pform" data-form="title"><label for="t">Write a believable title for this drawing</label><input id="t" name="t" maxlength="60" autocomplete="off" required placeholder="A title that could fool everyone"><button class="go">Send</button></form>`;
+      if (v.artist === me) return wait('That’s your drawing!', 'Keep a straight face while everyone writes titles.', 'star');
+      if (mine) return wait('Got it!', 'Waiting for the others…', 'check');
+      return formPhone('title', [{ id: 't', name: 't', max: 60, kick: 'Look at the drawing on the TV', label: 'What is this a drawing of?', ph: 'A title that could fool everyone' }], 'Send my title');
     }
     if (S.phase === 'vote') {
-      if (v.artist === me) return wait('Your drawing is up!', 'Everyone is voting on the real title.');
-      const off = v.choices.map((c, i) => arr(c.by).includes(me) ? i : -1).filter(i => i >= 0);
-      return choicesPhone(v.choices.map(c => c.t), { mine, off, q: 'Which one is the real title?' });
+      if (v.artist === me) return wait('Your drawing is up!', 'Everyone is voting on the real title.', 'star');
+      const own = v.choices.map((c, i) => arr(c.by).includes(me) ? i : -1).filter(i => i >= 0);
+      return choicesPhone(v.choices.map(c => c.t), { mine, own, q: 'Which one is the real title?', kick: 'Find the truth' });
     }
-    if (S.phase === 'reveal') { const p = obj(v.gains)[me]; return p ? `<div class="res ok"><h2>Nice!</h2><p class="pts">+${p}</p></div>` : lookTV(); }
+    if (S.phase === 'reveal') {
+      const p = obj(v.gains)[me], ch = arr(v.choices), real = ch.findIndex(c => c.real), my = obj(v.votes)[me];
+      if (v.artist === me) return p ? resultPhone(true, p, 'People spotted your real prompt.', 'Nice drawing!') : lookTV('Nobody guessed it!', 'See the votes on the TV.');
+      if (p) return resultPhone(true, p, my === real ? (p > 1000 ? 'You found the real title, and your fib fooled people!' : 'You found the real title!') : 'Your title fooled people!', my === real ? 'Nice!' : 'Gotcha!');
+      if (my != null && ch[real]) return resultPhone(false, 0, `The real title was “${ch[real].t}”.`, 'Fooled you!');
+      return lookTV();
+    }
     return lookTV();
   },
   validate(S, me, f) { if (S.phase === 'title' && norm(f.t) === norm(S.g.prompts[S.view.artist])) return 'Too close to the real title! Write a fib.'; return ''; }
@@ -305,8 +363,12 @@ const truths = {
   },
   phone(S, me, mine) {
     const v = S.view;
-    if (S.phase === 'vote') return v.subj === me ? wait('This one’s about you!', 'Keep a poker face. You score when people pick a truth.') : choicesPhone(v.items, { mine, q: `Which is ${v.person}'s lie?` });
-    if (S.phase === 'reveal') { const p = obj(v.gains)[me]; return v.subj === me ? `<div class="res ok"><h2>You fooled ${Math.round((p || 0) / 300)}</h2>${p ? `<p class="pts">+${p}</p>` : ''}</div>` : resultPhone(!!p, p, p ? '' : `The lie was: ${v.items[v.right]}`); }
+    if (S.phase === 'vote') return v.subj === me ? wait('This one’s about you!', 'Keep a poker face. You score when people pick a truth.', 'star') : choicesPhone(v.items, { mine, q: `Which is ${v.person}'s lie?`, kick: 'Spot the lie' });
+    if (S.phase === 'reveal') {
+      const p = obj(v.gains)[me];
+      if (v.subj === me) { const n = Math.round((p || 0) / 300); return resultPhone(n > 0, p, n ? 'Your poker face paid off.' : 'Everyone saw right through you!', n ? `You fooled ${n} ${n === 1 ? 'person' : 'people'}!` : 'Nobody was fooled'); }
+      return resultPhone(!!p, p, p ? 'You spotted the lie!' : `The lie was: ${v.items[v.right]}`);
+    }
     return lookTV();
   }
 };
@@ -339,12 +401,12 @@ const guess = {
     const v = S.view;
     const clue = `${v.img ? `<img class="qimg tall" src="${esc(imgURL(v.img))}" alt="Who is this?">` : ''}${v.clue ? big(`“${v.clue}”`) : ''}`;
     if (S.phase === 'ask') return `${kicker(`Guess Who · ${v.n} of ${v.of}`)}<div class="askwrap">${clue}${optsTV(v.opts)}</div>`;
-    if (S.phase === 'reveal') return `${kicker(`It was ${v.opts[v.right]}!`)}<div class="askwrap">${clue}${optsTV(v.opts, { right: v.right, pickers: v.pickers, P })}</div>`;
+    if (S.phase === 'reveal') return `${kicker(`Guess Who · ${v.n} of ${v.of}`)}<p class="verdict yes">It was ${esc(v.opts[v.right])}!</p><div class="askwrap">${clue}${optsTV(v.opts, { right: v.right, pickers: v.pickers, P })}</div>`;
   },
   phone(S, me, mine) {
     const v = S.view;
-    if (S.phase === 'ask') return v.subj === me ? wait('It’s you!', 'Act natural while everyone guesses.') : choicesPhone(v.opts, { mine, q: 'Who is it?' });
-    if (S.phase === 'reveal') { const p = obj(v.gains)[me]; return v.subj === me ? lookTV('Busted!') : resultPhone(!!p, p, p ? '' : `It was ${v.opts[v.right]}.`); }
+    if (S.phase === 'ask') return v.subj === me ? wait('It’s you!', 'Act natural while everyone guesses.', 'star') : choicesPhone(v.opts, { mine, q: v.clue ? (/^[“"]/.test(v.clue) ? v.clue : `“${v.clue}”`) : 'Look at the picture on the TV.', kick: 'Who is it?' });
+    if (S.phase === 'reveal') { const p = obj(v.gains)[me]; return v.subj === me ? lookTV('Busted!', 'Everyone knows it’s you now.') : resultPhone(!!p, p, p ? 'Faster right answers score more.' : `It was ${v.opts[v.right]}.`); }
     return lookTV();
   }
 };
@@ -381,14 +443,19 @@ const fibs = {
     if (S.phase === 'vote') return `${kicker('Find the truth!')}<h2 class="qbig small">${p}</h2><ol class="choices wide${v.choices.length > 6 ? ' many' : ''}">${v.choices.map((c, i) => `<li style="--ac:${ANS[i % 10].c}"><b>${ANS[i % 10].k}</b>${esc(c.t)}</li>`).join('')}</ol>`;
     if (S.phase === 'reveal') {
       const vc = i => Object.values(obj(v.votes)).filter(x => x === i).length;
-      return `<h2 class="qbig small">${p}</h2><ol class="choices wide rev${v.choices.length > 6 ? ' many' : ''}">${v.choices.map((c, i) => `<li class="${c.real ? 'real' : ''}" style="--ac:${ANS[i % 10].c}"><b>${vc(i)}</b><span>${esc(c.t)}<small>${c.real ? 'The truth' : 'Fib by ' + arr(c.by).map(u => esc(nameOf(P, u))).join(' & ')}</small></span></li>`).join('')}</ol>${storyBox(v.story, '', '', null)}`;
+      return `${kicker(`Family Fibs · ${v.n} of ${v.of} · the truth`)}<h2 class="qbig small">${p}</h2><ol class="choices wide rev${v.choices.length > 6 ? ' many' : ''}">${v.choices.map((c, i) => `<li class="${c.real ? 'real' : ''}" style="--ac:${ANS[i % 10].c}"><b>${vc(i)}</b><span>${esc(c.t)}<small>${c.real ? 'The truth' : 'Fib by ' + arr(c.by).map(u => esc(nameOf(P, u))).join(' & ')}</small></span></li>`).join('')}</ol>${storyBox(v.story, '', '', null)}`;
     }
   },
   phone(S, me, mine) {
     const v = S.view;
-    if (S.phase === 'write') return mine ? wait('Fib locked in!', 'Waiting for everyone else…') : `<form class="pform" data-form="fib"><label for="t">${esc(v.prompt.replace(/_{2,}/g, '___'))}</label><input id="t" name="t" maxlength="50" autocomplete="off" required placeholder="Your believable fib"><button class="go">Send</button></form>`;
-    if (S.phase === 'vote') { const off = v.choices.map((c, i) => arr(c.by).includes(me) ? i : -1).filter(i => i >= 0); return choicesPhone(v.choices.map(c => c.t), { mine, off, q: 'Which one is true?' }); }
-    if (S.phase === 'reveal') { const p = obj(v.gains)[me]; return p ? `<div class="res ok"><h2>Nice!</h2><p class="pts">+${p}</p></div>` : lookTV(); }
+    if (S.phase === 'write') return mine ? wait('Fib locked in!', 'Waiting for everyone else…', 'check') : formPhone('fib', [{ id: 't', name: 't', max: 50, kick: 'Fill in the blank with a fib', label: blanksP(v.prompt), ph: 'Something believable' }], 'Send my fib');
+    if (S.phase === 'vote') { const own = v.choices.map((c, i) => arr(c.by).includes(me) ? i : -1).filter(i => i >= 0); return choicesPhone(v.choices.map(c => c.t), { mine, own, q: v.prompt, qhtml: blanksP(v.prompt), kick: 'Which one is true?' }); }
+    if (S.phase === 'reveal') {
+      const p = obj(v.gains)[me], ch = arr(v.choices), real = ch.findIndex(c => c.real), my = obj(v.votes)[me];
+      if (p) return resultPhone(true, p, my === real ? (p > 1000 ? 'You found the truth, and your fib fooled people!' : 'You found the truth!') : 'Your fib fooled people!', my === real ? 'Nice!' : 'Gotcha!');
+      if (my != null && ch[real]) return resultPhone(false, 0, `The truth was “${ch[real].t}”.`, 'Fooled you!');
+      return lookTV();
+    }
     return lookTV();
   },
   validate(S, me, f) { const r = S.g.rounds[S.g.i]; if (S.phase === 'write' && norm(f.t) === norm(r.a)) return 'That’s the real answer! Write a fib instead.'; return ''; }
@@ -430,18 +497,22 @@ const quip = {
       const rev = S.phase === 'reveal', pct = rev && tot ? Math.round(100 * v.cnt[j] / tot) : 0;
       return `<div class="quipcard${rev && tot && v.cnt[j] === tot ? ' sweep' : ''}" style="--ac:${ANS[j].c}"><b>${ANS[j].k}</b><p>${esc(v.ans[j] || '(no answer)')}</p>${rev ? `<footer>${avatar(P[v.by[j]], 'sm')}${esc(nameOf(P, v.by[j]))}<em>${pct}%</em>${obj(v.gains)[v.by[j]] ? `<strong>+${v.gains[v.by[j]]}</strong>` : ''}</footer>` : ''}</div>`;
     };
-    return `${kicker(`Matchup ${v.n} of ${v.of}${S.phase === 'reveal' && tot && (v.cnt[0] === tot || v.cnt[1] === tot) ? ' · Clean sweep!' : ''}`)}${big(v.p)}<div class="quiprow">${card(0)}${card(1)}</div>`;
+    return `${kicker(`Matchup ${v.n} of ${v.of}${S.phase === 'reveal' && tot && (v.cnt[0] === tot || v.cnt[1] === tot) ? ' · Clean sweep!' : ''}`)}${big(v.p)}<div class="quiprow">${card(0)}<span class="vs" aria-hidden="true">vs</span>${card(1)}</div>`;
   },
   phone(S, me, mine) {
     const v = S.view, g = S.g;
     if (S.phase === 'write') {
       const mineK = g.m.map((m, k) => m.by.includes(me) ? k : -1).filter(k => k >= 0);
-      if (!mineK.length) return wait('Prompts are underway', 'You’ll vote in a minute');
-      if (mine) return wait('Answers in!', 'Waiting for everyone else…');
-      return `<form class="pform" data-form="quip">${mineK.map(k => `<label for="q${k}">${esc(g.m[k].p)}</label><input id="q${k}" name="q${k}" maxlength="80" autocomplete="off" required placeholder="Make the family laugh">`).join('')}<button class="go">Send both</button></form>`;
+      if (!mineK.length) return wait('Prompts are underway', 'You’ll vote in a minute', 'pencil');
+      if (mine) return wait('Answers in!', 'Waiting for everyone else…', 'check');
+      return formPhone('quip', mineK.map((k, j) => ({ id: 'q' + k, name: 'q' + k, max: 80, kick: mineK.length > 1 ? `Prompt ${j + 1} of ${mineK.length}` : 'Your prompt', label: esc(g.m[k].p), ph: 'Make the family laugh' })), mineK.length > 1 ? 'Send both' : 'Send');
     }
-    if (S.phase === 'vote') return v.by.includes(me) ? wait('That’s your matchup!', 'Everyone else is voting.') : choicesPhone(v.ans.map(a => a || '(no answer)'), { mine, q: v.p });
-    if (S.phase === 'reveal') { const p = obj(v.gains)[me]; return p ? `<div class="res ok"><h2>Ha!</h2><p class="pts">+${p}</p></div>` : lookTV(); }
+    if (S.phase === 'vote') return v.by.includes(me) ? wait('That’s your matchup!', 'Everyone else is voting.', 'laugh') : choicesPhone(v.ans.map(a => a || '(no answer)'), { mine, q: v.p, kick: 'Which answer is funnier?' });
+    if (S.phase === 'reveal') {
+      const p = obj(v.gains)[me], j = arr(v.by).indexOf(me), cnt = arr(v.cnt), tot = (cnt[0] || 0) + (cnt[1] || 0);
+      if (j >= 0) { const pct = tot ? Math.round(100 * (cnt[j] || 0) / tot) : 0; return resultPhone(!!p, p, tot ? `${pct}% of the votes${cnt[j] === tot ? '. Clean sweep!' : '.'}` : 'Nobody voted this time.', p ? 'Ha!' : 'Tough crowd'); }
+      return p ? resultPhone(true, p, '', 'Ha!') : lookTV('Who won the laugh?', 'The votes are on the TV.');
+    }
     return lookTV();
   }
 };

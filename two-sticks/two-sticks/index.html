@@ -34,17 +34,19 @@ h1{font:800 clamp(38px,8vw,58px)/1 'Baloo 2',system-ui,sans-serif;margin:0;text-
 .live.watch i{background:var(--sun)}
 .ph{flex:none;padding:3px 9px;border-radius:999px;background:var(--tint);font-weight:800;font-size:13px}
 .phnote{margin:12px 0 0;text-align:center;font-weight:800}
-.joincard{display:grid;gap:14px;margin-bottom:16px;align-items:center}
+.joincard{display:grid;gap:14px;margin-bottom:16px}
+.joincard.on .jtop p{margin:0}
 .joincard h2{font:800 22px/1.2 'Baloo 2',sans-serif;margin:0 0 4px}
 .joincard p{margin:0 0 10px}
-.jinfo{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.jinfo{display:grid;grid-template-columns:auto minmax(0,1fr);gap:18px;align-items:center}
 .qr{background:#fff;padding:8px;border-radius:12px;line-height:0}.qr img,.qr canvas{width:150px;height:150px}
 .jlab{margin:0;color:var(--soft);font-weight:700;font-size:14px}
-.jurl{margin:0 0 6px;font-weight:800;overflow-wrap:anywhere}
+.jurl{margin:2px 0 8px;font-weight:800;font-size:15px;line-height:1.3;overflow-wrap:anywhere}
+.jurl .nw{white-space:nowrap}
 .jcode{margin:0;font:800 46px/1 'Baloo 2',sans-serif;letter-spacing:.12em}
 .jcount{margin:8px 0 0;font-weight:700;font-size:15px}
 .jerr{color:var(--bad);font-weight:800}
-@media(min-width:700px){.joincard{grid-template-columns:minmax(0,1fr) auto}}
+@media(max-width:480px){.jinfo{grid-template-columns:minmax(0,1fr);justify-items:center;text-align:center}}
 .card{background:var(--card);color:var(--ink);border-radius:22px;padding:clamp(16px,4vw,28px);box-shadow:0 18px 40px -20px rgba(0,0,0,.5)}
 .setup h2{font:800 22px/1.2 'Baloo 2',sans-serif;margin:0 0 10px}
 .setup h2:not(:first-child),#triviaOpts>h2:first-child,#memOpts>h2:first-child{margin-top:24px}
@@ -220,7 +222,7 @@ input{flex:1;width:100%;min-height:50px;padding:0 12px;font:700 17px Nunito,sans
   </header>
   <div class="live" id="live0"><i></i><span></span></div>
   <div class="card joincard" id="joinCard">
-    <div>
+    <div class="jtop">
       <h2>Play on phones</h2>
       <p>Everyone can join from their own phone. No account or app needed.</p>
       <button class="btn" id="hostBtn">Let phones join</button>
@@ -892,9 +894,9 @@ function renderJoin(){
   if(!$('joinCard'))return;
   const ph=Object.values(PH.P).filter(p=>p&&p.name&&p.online!==false);
   $('hostBtn').hidden=PH.on;$('hostBtn').disabled=PH.busy;$('hostBtn').textContent=PH.busy?'Opening a room…':'Let phones join';
-  $('jerr').hidden=!PH.err;$('jerr').textContent=PH.err;$('joinInfo').hidden=!PH.on;
+  $('joinCard').classList.toggle('on',PH.on);$('jerr').hidden=!PH.err;$('jerr').textContent=PH.err;$('joinInfo').hidden=!PH.on;
   if(PH.on){
-    $('jcode').textContent=PH.code;$('jurl').textContent=shortURL();
+    $('jcode').textContent=PH.code;$('jurl').innerHTML=shortURL().split('/').map(x=>`<span class="nw">${esc(x)}</span>`).join('/<wbr>');
     if(PH.qrFor!==PH.code){PH.qrFor=PH.code;$('qr').innerHTML='';try{new QRCode($('qr'),{text:joinURL()+(joinURL().includes('?')?'&':'?')+'c='+PH.code,width:300,height:300,colorDark:'#1f2414',colorLight:'#ffffff'})}catch(e){$('qr').hidden=true}}
     $('jcount').textContent=ph.length?`On phones: ${ph.map(p=>p.name).join(', ')}`:'No phones yet. When someone joins, they show up in the player list below.';
     for(const id of['live0','live1']){const el=$(id);el.className='live on';el.querySelector('span').textContent=`Phones join with code ${PH.code}`}

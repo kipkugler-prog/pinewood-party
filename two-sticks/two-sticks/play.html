@@ -82,6 +82,23 @@ input{width:100%;min-height:54px;padding:10px 14px;border-radius:14px;border:2px
 .sent{margin:10px 0 0;text-align:center;font-weight:800;color:var(--soft)}
 .toast{position:fixed;left:50%;top:14px;translate:-50% 0;z-index:9;padding:10px 18px;border-radius:999px;background:#fff;color:#1f2414;font-weight:800;opacity:0;pointer-events:none;transition:opacity .25s;max-width:calc(100% - 32px);text-align:center}
 .toast.show{opacity:1}
+.mgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.mcd{aspect-ratio:3/4;padding:4px 3px 12px;border-radius:10px;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-align:center;background:#8a5a2b;border:2px solid #a8743f;box-shadow:0 3px 0 #5e3c1b;color:#fff;overflow:hidden}
+.mcd svg{width:52%;height:auto}
+.mcd.can{border-color:var(--sun)}
+.mcd.up{background:var(--card);color:var(--ink);border-color:var(--line);box-shadow:none}
+.mcd.st.up{background:var(--factbg)}
+.mcd.got{border-color:var(--own);box-shadow:inset 0 0 0 2px var(--own)}
+.mcd.miss{border-color:var(--bad)}.mcd.hit{border-color:var(--good)}
+.mcd:disabled{cursor:default}
+.mcd .em{font-size:24px;line-height:1.1}.mcd .em.sm{font-size:15px}
+.mcd .nm{font:800 12px/1.05 'Baloo 2',sans-serif;overflow-wrap:anywhere}
+.mcd .sy{font:800 10px/1.15 Nunito,sans-serif}
+.mcd .bb{position:absolute;bottom:2px;left:2px;right:2px;font:800 7.5px/1.2 Nunito,sans-serif;text-transform:uppercase;letter-spacing:.03em;color:var(--soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mmbig{display:flex;align-items:center;gap:12px;margin:0 0 12px}
+.mmbig .em{font-size:48px;line-height:1;flex:none}
+.mmbig .sub{margin:2px 0 0}
+.found{margin:0;text-align:center;font-weight:800;color:var(--soft)}
 @media(prefers-reduced-motion:reduce){.spinner{animation:none}}
 </style>
 </head>
@@ -99,7 +116,7 @@ input{width:100%;min-height:54px;padding:10px 14px;border-radius:14px;border:2px
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const arr=x=>Array.isArray(x)?x.filter(v=>v!==undefined&&v!==null):(x&&typeof x==='object'?Object.keys(x).sort((a,b)=>a-b).map(k=>x[k]):[]);
-const {BANK,VERSES,TALK,CATS,CROWN,LVL}=window.TS;
+const {BANK,VERSES,TALK,CATS,CROWN,LVL}=window.TS,PAIRS=window.TS.PAIRS||[];
 const catOf=id=>id==='crown'?CROWN:CATS.find(c=>c.id===id)||{name:id,color:'#56657a'};
 const SAVE='two-sticks-join',PRAISE=['Yes!','You got it!','Nailed it!','Way to go!','Correct!'];
 let net=null,code='',me='',S=null,level='I',busy=false,sentSig='',unsubs=[],revealT=null,lastTurnSig='';
@@ -149,7 +166,7 @@ $('leave').onclick=e=>{const b=e.currentTarget;
   else{b.dataset.arm='1';b.textContent='Tap again';setTimeout(()=>{delete b.dataset.arm;b.textContent='Leave'},3000)}};
 
 /* ---------- sending ---------- */
-const sig=g=>g?[g.id,g.turn,g.phase,g.spinN,g.pick,(g.steal&&g.steal.pick)??'',arr(g.q&&g.q.gone).length,g.q&&g.q.hint?1:0].join(':'):'';
+const sig=g=>!g?'':g.game==='memory'?[g.id,g.turn,g.phase,arr(g.mm&&g.mm.up).length,g.mm&&g.mm.found,g.mm&&g.mm.tries].join(':'):[g.id,g.turn,g.phase,g.spinN,g.pick,(g.steal&&g.steal.pick)??'',arr(g.q&&g.q.gone).length,g.q&&g.q.hint?1:0].join(':');
 function send(a,x){
   const g=S&&S.g;if(!g)return;const k=`${g.id}-${g.turn}`;
   sentSig=sig(g);render();
@@ -169,8 +186,9 @@ function render(){
   board(g);
   if(sentSig&&sig(g)!==sentSig)sentSig='';
   const waiting=!!sentSig,cur=g.turn%ps.length,p=ps[cur],mine=mi===cur,q=g.q;
-  const ts=g.id+':'+g.turn;if(mine&&g.phase==='spin'&&lastTurnSig!==ts){lastTurnSig=ts;try{navigator.vibrate&&navigator.vibrate(120)}catch(e){}}
+  const ts=g.id+':'+g.turn;if(mine&&(g.phase==='spin'||(g.game==='memory'&&g.phase==='flip'))&&lastTurnSig!==ts){lastTurnSig=ts;try{navigator.vibrate&&navigator.vibrate(120)}catch(e){}}
   if(g.phase==='over')return over(g,ps);
+  if(g.game==='memory')return memView(g,ps,mi,waiting);
   if(mi<0&&g.phase==='spin')return card(`<h2>${esc(p.name)} is up</h2><p class="sub">You're watching this game. You'll be in the next one when the host adds you.</p>`);
   clearTimeout(revealT);
   if(g.phase!=='spin'&&g.revealAt&&now()<g.revealAt){revealT=setTimeout(render,g.revealAt-now()+30);return card(`<div class="spinner" aria-hidden="true"></div><h2 class="center">The wheel is spinning…</h2><p class="sub center">Watch the TV!</p>`)}
@@ -207,11 +225,36 @@ function render(){
   }
   card(h);
 }
+const BACK='<svg viewBox="0 0 60 80" aria-hidden="true"><g transform="rotate(-10 30 40)"><rect x="17" y="6" width="12" height="68" rx="6" fill="#f3e2bd"/><rect x="31" y="6" width="12" height="68" rx="6" fill="#e2c38f"/><rect x="13" y="34" width="34" height="11" rx="4" fill="#f2c14e"/></g></svg>';
+function memView(g,ps,mi,waiting){
+  const M=g.mm||{},cards=arr(M.cards).map(arr),up=arr(M.up),hit=arr(M.hit),cur=g.turn%ps.length,p=ps[cur]||{},mine=mi===cur,ph=g.phase;
+  const found=`<p class="found">${M.found||0} of ${M.size||0} pairs found</p>`;
+  if(ph==='match'&&M.last>=0&&PAIRS[M.last]){
+    const P=PAIRS[M.last],vs=P[6]||[],last=(M.found||0)>=(M.size||0);
+    return card(`<p class="verdict yes">Match! +1 star for ${mine?'you':esc(p.name)}</p>
+      <div class="mmbig"><span class="em" aria-hidden="true">${P[1]}</span><div><h2>${esc(P[0])}</h2><p class="sub">${esc(P[2])}</p></div></div>
+      <p class="fact"><b>Did you know?</b> ${esc(P[3])}<span class="ref">${esc(P[4])}</span></p>
+      ${vs.length?`<div class="verse">${vs.map(v=>`<blockquote>${esc(v[1])}<cite>${esc(v[0])}</cite></blockquote>`).join('')}</div>`:''}
+      ${mine?`<button class="btn" data-a="mmnext"${waiting?' disabled':''}>${last?'See who won':'Keep going'}</button>`:`<p class="sent">${last?'That was the last pair!':`${esc(p.name)} goes again.`}</p>`}`);
+  }
+  let head;
+  if(ph==='miss')head=`<h2 class="center">Not a match!</h2><p class="sub center">Remember where they were.</p>`;
+  else if(mine)head=`<h2 class="center">Your turn!</h2><p class="sub center">${waiting?'Sent!':up.length===1?'Now find its match!':'Tap two cards to find a match.'}</p>`;
+  else head=`<h2 class="center">${esc(p.name)}'s turn</h2><p class="sub center">${mi<0?"You're watching this game.":'Watch closely and remember the cards!'}</p>`;
+  const can=mine&&ph==='flip'&&!waiting&&up.length<2;
+  const grid=cards.map((c,i)=>{const P=c[0]>=0?PAIRS[c[0]]:null,isUp=!!P,own=c[2]>=0&&ps[c[2]]?ps[c[2]].col:'';
+    let cl='mcd'+(isUp?' up':'')+(c[1]?' st':'')+(own?' got':'')+(ph==='miss'&&up.includes(i)?' miss':'')+(hit.includes(i)?' hit':'')+(can&&!isUp?' can':'');
+    const face=!P?BACK:c[1]===0?`<span class="em" aria-hidden="true">${P[1]}</span><span class="nm">${esc(P[0])}</span>`:`${M.pics?`<span class="em sm" aria-hidden="true">${P[1]}</span>`:''}<span class="sy">${esc(P[2])}</span>`;
+    return`<button class="${cl}" data-a="flip" data-x="${i}"${own?` style="--own:${own}"`:''}${!can||isUp?' disabled':''} aria-label="${P?esc(c[1]?P[2]:P[0]):`Card ${i+1}, face down`}">${face}${P?`<span class="bb">${P[5]==='B'?'Bible':'Book of Mormon'}</span>`:''}</button>`}).join('');
+  $('main').innerHTML=`<div class="card">${head}${found}</div><div class="mgrid">${grid}</div>`;
+}
 function card(h){$('main').innerHTML=`<div class="card">${h}</div>`}
 function lobby(){
-  const list=arr(S&&S.setup),inList=list.some(p=>p.uid===me);
-  card(`<h2>You're in!</h2><p class="sub">${inList?'Waiting for the host to start the game. Watch the TV.':"You're connected. The host will see you in the player list."}</p>
-    <ul class="list">${list.map(p=>`<li class="pl">${esc(p.name)}<span class="tag">${p.uid===me?'you':p.uid?'phone':''} ${LVL[p.level]||''}</span></li>`).join('')}</ul>
+  const list=arr(S&&S.setup),inList=list.some(p=>p.uid===me),sv=saved();
+  const rows=list.map(p=>`<li class="pl">${esc(p.name)}<span class="tag">${p.uid===me?'you, ':p.uid?'phone, ':''}${LVL[p.level]||''}</span></li>`);
+  if(!inList)rows.push(`<li class="pl">${esc(sv.name||'You')}<span class="tag">you, joining…</span></li>`);
+  card(`<h2>You're in!</h2><p class="sub">${S&&S.game==='memory'?'Next game: Memory Match. ':''}${inList?'Waiting for the host to start the game. Watch the TV.':'You\'re connected. Your name shows up on the TV in a moment. If it doesn\'t, make sure the game is open on the TV.'}</p>
+    <ul class="list">${rows.join('')}</ul>
     <p class="lbl">Your level</p><div class="seg" id="lv">${['B','I','X'].map(l=>`<button data-a="lvl" data-x="${l}" aria-pressed="${l===(saved().level||level)}">${LVL[l]}</button>`).join('')}</div>`);
 }
 function over(g,ps){
@@ -226,6 +269,7 @@ $('main').addEventListener('click',e=>{
   if(a==='ans')send(g.phase==='steal'?'steal':'answer',+x);
   else if(a==='pass')send('steal',-1);
   else if(a==='choose')send('choose',x);
+  else if(a==='flip')send('flip',+x);
   else send(a);
 });
 

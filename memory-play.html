@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1f2a44">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Memory Match">
+<title>Memory Match: Join</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* Phone companion for Memory Match in every Game Closet game. Colors follow the game on the TV. */
+:root{--bg:#1f2a44;--ink:#fff;--card:#fff;--cink:#1d2230;--soft:#5b6478;--line:#e2e6ee;--tint:#f1f3f8;--acc:#f2c14e;--accInk:#2a1d00;--accEdge:#b98a22;--good:#2f8a3a;--bad:#c8323c;--factbg:#fbf2d6;--back:#3d4f7a;--backEdge:#2a3858;--font:'Baloo 2',system-ui,sans-serif}
+*{box-sizing:border-box;min-width:0}[hidden]{display:none!important}
+html,body{margin:0;background:var(--bg);color:var(--ink)}
+body{font:17px/1.45 Nunito,system-ui,sans-serif;overflow-x:clip;-webkit-text-size-adjust:100%}
+button,input{font:inherit;color:inherit}button{cursor:pointer;-webkit-tap-highlight-color:transparent}
+.app{max-width:560px;margin:0 auto;padding:max(12px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) 40px max(14px,env(safe-area-inset-left))}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.brand{font:800 21px/1.1 var(--font)}.brand small{display:block;font:700 13px Nunito,sans-serif;opacity:.85}
+.me{display:flex;align-items:center;gap:8px;font-weight:800}
+.leave{min-height:36px;padding:4px 12px;border-radius:999px;border:0;background:rgba(255,255,255,.16);font-weight:800;font-size:14px}
+.card{background:var(--card);color:var(--cink);border-radius:20px;padding:18px;box-shadow:0 18px 40px -20px rgba(0,0,0,.5);margin-bottom:12px}
+h1,h2{font-family:var(--font);font-weight:800;margin:0;line-height:1.1}h1{font-size:32px}h2{font-size:27px}
+.sub{margin:6px 0 12px;color:var(--soft);font-weight:700}
+label,.lbl{display:block;margin:14px 0 6px;font-weight:800}
+input{width:100%;min-height:54px;padding:10px 14px;border-radius:14px;border:2px solid var(--line);background:var(--card);color:var(--cink);font-size:20px;font-weight:800}
+#jc{text-transform:uppercase;letter-spacing:.3em;font:800 30px var(--font);text-align:center}
+.btn{width:100%;min-height:56px;padding:0 20px;margin-top:14px;border-radius:16px;border:0;font:800 22px var(--font);background:var(--acc);color:var(--accInk);box-shadow:0 4px 0 var(--accEdge)}
+.btn:active{transform:translateY(2px);box-shadow:0 2px 0 var(--accEdge)}.btn:disabled{opacity:.5;cursor:default}
+.err{color:var(--bad);font-weight:800;margin:10px 0 0}
+.board{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.pc{display:flex;align-items:center;gap:6px;min-height:32px;padding:2px 10px 2px 8px;border-radius:999px;background:rgba(255,255,255,.14);font-weight:800;font-size:14px}
+.pc.on{background:#fff;color:#1f2414}
+.d{width:12px;height:12px;border-radius:50%;flex:none;box-shadow:0 0 0 2px rgba(255,255,255,.7)}
+.center{text-align:center}
+.list{list-style:none;padding:0;margin:12px 0 0;display:grid;gap:8px}
+.pl{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:var(--tint);font-weight:800}
+.pl .tag{margin-left:auto;font-size:13px;color:var(--soft);white-space:nowrap}
+.found{margin:0;text-align:center;font-weight:800;color:var(--soft)}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.mc{aspect-ratio:3/4;padding:4px 3px 12px;border-radius:10px;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-align:center;background:var(--back);border:2px solid color-mix(in srgb,var(--acc) 50%,var(--back));box-shadow:0 3px 0 var(--backEdge);color:var(--acc);overflow:hidden}
+.mc svg{width:50%;height:auto}
+.mc.can{border-color:var(--acc)}
+.mc.up{background:var(--card);color:var(--cink);border-color:var(--line);box-shadow:none}
+.mc.b.up{background:var(--factbg)}
+.mc.got{border-color:var(--own);box-shadow:inset 0 0 0 2px var(--own)}
+.mc.miss{border-color:var(--bad)}.mc.hit{border-color:var(--good)}
+.mc:disabled{cursor:default}
+.mc img{width:100%;flex:1 1 0;min-height:0;object-fit:cover;border-radius:6px}
+.mc .em{font-size:24px;line-height:1.1}.mc .em.sm{font-size:15px}
+.mc .nm{font:800 12px/1.05 var(--font);overflow-wrap:anywhere}
+.mc .sy{font:800 10px/1.15 Nunito,sans-serif;overflow-wrap:anywhere}
+.mc .bb{position:absolute;bottom:2px;left:2px;right:2px;font:800 7.5px/1.2 Nunito,sans-serif;text-transform:uppercase;letter-spacing:.03em;color:var(--soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.verdict{font:800 25px/1.15 var(--font);margin:0 0 10px;color:var(--good)}
+.big{display:flex;align-items:center;gap:12px;margin:0 0 12px}
+.big .em{font-size:48px;line-height:1;flex:none}.big img{width:96px;height:96px;object-fit:cover;border-radius:12px;flex:none}
+.big .sub{margin:2px 0 0}
+.fact{margin:0 0 12px;padding:12px 14px;border-radius:14px;background:var(--factbg)}.fact b{font-family:var(--font);font-size:18px}
+.ref{display:block;margin-top:4px;color:var(--soft);font-weight:800;font-size:14px}
+.quote{margin:0 0 12px;padding:12px 14px;border-radius:14px;border:2px solid var(--line)}
+blockquote{margin:0 0 8px;padding-left:12px;border-left:4px solid var(--acc);font:500 16px/1.5 Georgia,serif}
+cite{display:block;margin-top:2px;font:800 13px Nunito,sans-serif;color:var(--soft);font-style:normal}
+.sent{margin:10px 0 0;text-align:center;font-weight:800;color:var(--soft)}
+.toast{position:fixed;left:50%;top:14px;translate:-50% 0;z-index:9;padding:10px 18px;border-radius:999px;background:#fff;color:#1f2414;font-weight:800;opacity:0;pointer-events:none;transition:opacity .25s;max-width:calc(100% - 32px);text-align:center}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="bar"><span class="brand" id="brand">Memory Match<small id="gname"></small></span><span class="me" id="meBar" hidden><span id="meName"></span><button class="leave" id="leave">Leave</button></span></header>
+  <div class="board" id="board"></div>
+  <main id="main"><div class="card center"><h2>Loading…</h2></div></main>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="room.js"></script>
+<script>
+{
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const arr=x=>Array.isArray(x)?x.filter(v=>v!==undefined&&v!==null):(x&&typeof x==='object'?Object.keys(x).sort((a,b)=>a-b).map(k=>x[k]):[]);
+const BACK='<svg viewBox="0 0 60 80" aria-hidden="true"><circle cx="30" cy="40" r="19" fill="none" stroke="currentColor" stroke-width="5" opacity=".9"/><path d="M30 26v28M16 40h28" stroke="currentColor" stroke-width="5" stroke-linecap="round" opacity=".55"/></svg>';
+const SAVE='closet-mm-join';
+const ST=(()=>{try{return ClosetRoom.DEV?sessionStorage:localStorage}catch(e){return null}})();
+const saved=()=>{try{return JSON.parse(ST.getItem(SAVE)||'null')||{}}catch(e){return{}}};
+const store=o=>{try{ST.setItem(SAVE,JSON.stringify(o))}catch(e){}};
+let R=null,S=null,busy=false,sentSig='',unsub=null,lastTurn='',themed='';
+let toastT=0;const toast=m=>{const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2400)};
+
+function joinForm(msg,c){
+  const s=saved();$('meBar').hidden=true;$('board').innerHTML='';
+  $('main').innerHTML=`<div class="card"><h1>Join the game</h1><p class="sub">Type the code from the TV. No account or app needed.</p>
+    <label for="jc">Room code</label><input id="jc" maxlength="4" autocomplete="off" autocapitalize="characters" spellcheck="false" value="${esc(c||s.code||'')}">
+    <label for="jn">Your name</label><input id="jn" maxlength="16" autocomplete="nickname" value="${esc(s.name||'')}">
+    <p class="err">${esc(msg||'')}</p><button class="btn" id="jgo"${busy?' disabled':''}>${busy?'Joining…':'Join'}</button></div>`;
+  $('jgo').onclick=()=>join($('jc').value,$('jn').value);
+  $('jn').onkeydown=e=>{if(e.key==='Enter')$('jgo').click()};
+  if(!$('jc').value)$('jc').focus();else if(!$('jn').value)$('jn').focus();
+}
+async function join(c,name){
+  name=String(name||'').trim().slice(0,16);c=String(c||'').toUpperCase().replace(/[^A-Z]/g,'').slice(0,4);
+  if(!name)return joinForm('Type your name so everyone knows who you are.',c);
+  busy=true;joinForm('',c);
+  try{R=await ClosetRoom.join(c,'memory',{name})}
+  catch(e){busy=false;return joinForm(e&&e.user?e.message:"Couldn't connect. Check your internet, then try again.",c)}
+  busy=false;store({code:R.code,name});
+  if(unsub)try{unsub()}catch(e){}
+  unsub=R.state(v=>{S=v;render()});
+  $('meName').textContent=name;$('meBar').hidden=false;render();
+}
+$('leave').onclick=e=>{const b=e.currentTarget;
+  if(b.dataset.arm){if(R)R.leave().catch(()=>{});if(unsub)try{unsub()}catch(x){}unsub=null;const s=saved();store({name:s.name});R=null;S=null;delete b.dataset.arm;b.textContent='Leave';joinForm()}
+  else{b.dataset.arm='1';b.textContent='Tap again';setTimeout(()=>{delete b.dataset.arm;b.textContent='Leave'},3000)}};
+
+const sig=g=>g?[g.id,g.turn,g.phase,arr(g.up).length,g.found,g.tries].join(':'):'';
+function send(a,x){
+  const g=S&&S.g;if(!g||!R)return;
+  sentSig=sig(g);render();
+  R.send(`${g.id}-${g.turn}`,a,x).catch(()=>{sentSig='';render();toast("That didn't send. Try again.")});
+  setTimeout(()=>{if(sentSig&&sig(S&&S.g)===sentSig){sentSig='';render()}},6000);
+}
+function theme(t){const k=JSON.stringify(t||{});if(k===themed)return;themed=k;for(const[n,v]of Object.entries(t||{}))document.documentElement.style.setProperty('--'+n,v)}
+const card=h=>{$('main').innerHTML=`<div class="card">${h}</div>`};
+function face(f){return(f.img?`<img src="${esc(f.img)}" alt="">`:f.pic?`<span class="em${f.s?' sm':''}" aria-hidden="true">${f.pic}</span>`:'')+`<span class="${f.s?'sy':'nm'}">${esc(f.text)}</span>${f.tag?`<span class="bb">${esc(f.tag)}</span>`:''}`}
+function render(){
+  if(!R)return;
+  if(S&&S.kicked){}
+  theme(S&&S.theme);$('gname').textContent=S&&S.game||'';
+  const g=S&&S.g,me=R.me;
+  if(!S||S.view==='setup'||!g){$('board').innerHTML='';return lobby()}
+  const ps=arr(g.players),mi=ps.findIndex(p=>p.uid===me),cur=g.turn%Math.max(1,ps.length),p=ps[cur]||{},mine=mi===cur;
+  $('board').innerHTML=ps.map((q,i)=>`<span class="pc${g.phase!=='over'&&i===cur?' on':''}"><i class="d" style="background:${q.col}"></i>${esc(q.name)}${q.uid===me?' (you)':''} ★ ${q.score||0}</span>`).join('');
+  if(sentSig&&sig(g)!==sentSig)sentSig='';
+  const waiting=!!sentSig,ph=g.phase,up=arr(g.up),hit=arr(g.hit),cards=arr(g.cards);
+  const ts=g.id+':'+g.turn;if(mine&&ph==='flip'&&lastTurn!==ts){lastTurn=ts;try{navigator.vibrate&&navigator.vibrate(120)}catch(e){}}
+  if(ph==='over'){
+    const r=ps.map((q,i)=>({q,i})).sort((a,b)=>(b.q.score||0)-(a.q.score||0)),top=r.length?r[0].q.score||0:0,ch=r.filter(x=>(x.q.score||0)===top).map(x=>x.q.name);
+    return card(`<h2 class="center">${ch.length>1?"It's a tie!":esc(ch[0]||'')+' wins!'}</h2><p class="sub center">${g.found} pairs found in ${g.tries} tries. The host can start another game.</p><ol class="list">${r.map(x=>`<li class="pl"><i class="d" style="background:${x.q.col}"></i>${esc(x.q.name)}${x.q.uid===me?' (you)':''}<span class="tag">★ ${x.q.score||0}</span></li>`).join('')}</ol>`);
+  }
+  if(ph==='match'&&g.panel){
+    const P=g.panel,last=(g.found||0)>=(g.size||0),qs=arr(P.quote).map(arr);
+    return card(`<p class="verdict">Match! +1 star for ${mine?'you':esc(p.name)}</p>
+      <div class="big">${P.img?`<img src="${esc(P.img)}" alt="">`:P.pic?`<span class="em" aria-hidden="true">${P.pic}</span>`:''}<div><h2>${esc(P.title)}</h2><p class="sub">${esc(P.sub)}</p></div></div>
+      ${P.fact?`<p class="fact"><b>Did you know?</b> ${esc(P.fact)}${P.ref?`<span class="ref">${esc(P.ref)}</span>`:''}</p>`:''}
+      ${qs.length?`<div class="quote">${qs.map(q=>`<blockquote>${esc(q[1])}<cite>${esc(q[0])}</cite></blockquote>`).join('')}</div>`:''}
+      ${mine?`<button class="btn" data-a="next"${waiting?' disabled':''}>${last?'See who won':'Keep going'}</button>`:`<p class="sent">${last?'That was the last pair!':esc(p.name)+' goes again.'}</p>`}`);
+  }
+  let head;
+  if(ph==='miss')head=`<h2 class="center">Not a match!</h2><p class="sub center">Remember where they were.</p>`;
+  else if(mine)head=`<h2 class="center">Your turn!</h2><p class="sub center">${waiting?'Sent!':up.length===1?'Now find its match!':'Tap two cards to find a match.'}</p>`;
+  else head=`<h2 class="center">${esc(p.name)}'s turn</h2><p class="sub center">${mi<0?"You're watching this game.":'Watch closely and remember the cards!'}</p>`;
+  const can=mine&&ph==='flip'&&!waiting&&up.length<2;
+  const grid=cards.map((c,i)=>{const f=c&&c.f,own=c&&c.m>=0&&ps[c.m]?ps[c.m].col:'';
+    const cl='mc'+(f?' up':'')+(f&&f.s?' b':'')+(own?' got':'')+(ph==='miss'&&up.includes(i)?' miss':'')+(hit.includes(i)?' hit':'')+(can&&!f?' can':'');
+    return`<button class="${cl}" data-a="flip" data-x="${i}"${own?` style="--own:${own}"`:''}${!can||f?' disabled':''} aria-label="${f?esc(f.text):`Card ${i+1}, face down`}">${f?face(f):BACK}</button>`}).join('');
+  $('main').innerHTML=`<div class="card">${head}<p class="found">${g.found||0} of ${g.size||0} pairs found</p></div><div class="grid">${grid}</div>`;
+}
+function lobby(){
+  const list=arr(S&&S.setup),me=R.me,inList=list.some(p=>p.uid===me),sv=saved();
+  const rows=list.map(p=>`<li class="pl">${esc(p.name)}<span class="tag">${p.uid===me?'you':p.uid?'phone':''}</span></li>`);
+  if(!inList)rows.push(`<li class="pl">${esc(sv.name||'You')}<span class="tag">you, joining…</span></li>`);
+  card(`<h2>You're in!</h2><p class="sub">${inList?'Waiting for the host to start Memory Match. Watch the TV.':"You're connected. Your name shows up on the TV in a moment."}</p><ul class="list">${rows.join('')}</ul>`);
+}
+$('main').addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b||b.disabled)return;if(b.dataset.a==='flip')send('flip',+b.dataset.x);else send(b.dataset.a)});
+
+const qc=(new URLSearchParams(location.search).get('c')||'').toUpperCase();
+const s0=saved();
+if(s0.code&&s0.name&&(!qc||qc===s0.code))join(s0.code,s0.name);else joinForm('',qc);
+}
+</script>
+</body>
+</html>

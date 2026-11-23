@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Code Bot Quest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@600;800;900&display=swap" rel="stylesheet">
+<style>
+/* VOICE game for a parent and a 9-year-old who loves tech
+   IDEA a real circuit board: solder-mask green, gold traces, resistors as walls, microchips to collect, a charging pad to dock
+   PICTURE the board itself, large, with the little rover robot on it; code blocks snap in underneath
+   COLOUR PCB green ground, cream silkscreen ink, gold traces; blocks in yellow, sky, pink and orange
+   TYPE Lilita One (chunky toy lettering) + Nunito
+   LAYOUT phone: title bar, scores, board, program, block palette, run; laptop: board left, code right */
+:root{color-scheme:dark;--bg:#0d2c1b;--panel:#13402a;--edge:#2b6c45;--ink:#f6f2e4;--soft:#b8cdb9;--gold:#e3b04b;--pcb:#1d6b3f;--pad:#27834d;--F:#ffcf3f;--L:#5cc8ff;--R:#ff7ab6;--LP:#ff9f3a;--bad:#ff5a5f;--good:#7cf05a}
+*{box-sizing:border-box;min-width:0}
+[hidden]{display:none!important}
+html,body{margin:0;background:var(--bg);color:var(--ink)}
+body{font:16px/1.45 Nunito,system-ui,sans-serif;overflow-x:clip;background:linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px) 0 0/28px 28px,linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px) 0 0/28px 28px,var(--bg)}
+button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+button:focus-visible,input:focus-visible{outline:3px solid var(--F);outline-offset:2px}
+h1,h2,h3{font-family:'Lilita One',Nunito,sans-serif;font-weight:400;margin:0;letter-spacing:.01em}
+.app{max-width:1060px;margin:0 auto;padding:12px max(16px,env(safe-area-inset-left)) 40px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.top h1{font-size:clamp(28px,6vw,40px);line-height:1.05;color:var(--F);text-shadow:0 3px 0 #7a5a00}
+.tbtns{display:flex;gap:8px}
+.pill{min-height:40px;padding:6px 14px;border-radius:999px;border:2px solid var(--edge);background:var(--panel);font-weight:800;font-size:15px}
+.pill[aria-pressed=false]{opacity:.7}
+.scores{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 12px}
+.sc{display:flex;align-items:center;gap:8px;min-height:38px;padding:3px 14px 3px 4px;border-radius:999px;background:var(--panel);border:2px solid var(--edge);font-weight:800}
+.sc.on{background:var(--ink);color:#12301f;border-color:var(--ink)}
+.sc .mb{width:30px;height:30px}
+.sc .st{font-family:'Lilita One',sans-serif;font-size:18px;color:var(--F)}
+.sc.on .st{color:#a06e00}
+.play{display:grid;gap:14px}
+@media(min-width:760px){.play{grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:24px;align-items:start}.boardcol{position:sticky;top:12px}}
+.mission{display:grid;gap:2px;margin-bottom:10px}
+.stg{font-weight:800;color:var(--gold);font-size:15px}
+.mission h2{font-size:clamp(26px,5vw,34px);line-height:1.05}
+.mission p{margin:2px 0 0;color:var(--soft);font-weight:700}
+.pcb{position:relative;margin:0 auto;border-radius:18px;background:repeating-linear-gradient(90deg,transparent 0 22px,rgba(227,176,75,.12) 22px 24px),repeating-linear-gradient(0deg,transparent 0 30px,rgba(227,176,75,.08) 30px 32px),var(--pcb);box-shadow:inset 0 0 0 3px var(--gold),0 9px 0 #08200f}
+.hole{position:absolute;width:12px;height:12px;border-radius:50%;background:var(--bg);box-shadow:0 0 0 3px var(--gold)}
+.grid{position:absolute;display:grid}
+.cell{position:relative;border-radius:9px;background:var(--pad);box-shadow:inset 0 0 0 2px rgba(255,255,255,.07)}
+.cell.floor::after,.cell.swa::after,.cell.swb::after{content:'';position:absolute;right:5px;top:5px;width:6px;height:6px;border-radius:50%;background:var(--gold);opacity:.55}
+.cell.wall,.cell.water,.cell.gatea,.cell.gateb{background:transparent;box-shadow:none}
+.cell svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+.cell.water svg{border-radius:9px}
+.chip{position:absolute;inset:6%;transition:transform .3s,opacity .3s;animation:bob 1.6s ease-in-out infinite}
+.chip.got{transform:scale(.2) translateY(-40%);opacity:0}
+@keyframes bob{50%{transform:translateY(-6%)}}
+.cell .knob{transition:opacity .2s}
+.cell.on{box-shadow:0 0 0 3px var(--sw)}
+.cell.on .knob{opacity:.45}
+.cell .bars{transition:transform .35s,opacity .35s}
+.cell.open .bars{transform:translateY(-70%);opacity:.12}
+.cell.flash{animation:flash .5s 2}
+@keyframes flash{50%{box-shadow:0 0 0 4px var(--bad)}}
+.bot{position:absolute;left:0;top:0;z-index:2;pointer-events:none}
+.bot svg{width:100%;height:100%;display:block;filter:drop-shadow(0 4px 0 rgba(0,0,0,.35))}
+.bot .spin{width:100%;height:100%}
+.bot.shake{animation:shake .4s}
+@keyframes shake{25%{translate:-5px 0}75%{translate:5px 0}}
+.bot.sink .spin{transform-origin:center;opacity:.35;scale:.7;transition:opacity .4s,scale .4s}
+.codecol{display:grid;gap:10px}
+.phead{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.phead b{font-family:'Lilita One',sans-serif;font-weight:400;font-size:22px}
+.phead span{color:var(--soft);font-weight:800;white-space:nowrap}
+.prog{min-height:76px;padding:10px;border-radius:16px;background:#0a2416;border:2px dashed var(--edge);display:flex;flex-wrap:wrap;gap:8px;align-content:flex-start}
+.empty{color:var(--soft);font-weight:700;align-self:center;padding:6px}
+.blk{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:6px 12px 6px 9px;border:0;border-radius:12px;font-weight:900;font-size:15px;color:#1a1300;box-shadow:inset 0 -4px 0 rgba(0,0,0,.18);transition:transform .15s}
+.blk svg,.pb svg{width:22px;height:22px;flex:none}
+.bF{background:var(--F)}.bL{background:var(--L)}.bR{background:var(--R)}
+.blk.on{transform:scale(1.12);box-shadow:0 0 0 4px var(--ink)}
+.blk.bug,.loop.bug>.lh{box-shadow:0 0 0 4px var(--bad);animation:flash .5s 2}
+.loop{display:flex;flex-direction:column;border-radius:14px;background:var(--LP);padding:4px;box-shadow:inset 0 -4px 0 rgba(0,0,0,.18)}
+.loop.open{box-shadow:0 0 0 3px var(--ink)}
+.loop.on{box-shadow:0 0 0 4px var(--ink)}
+.lh{display:flex;align-items:center;gap:4px;padding:2px 2px 4px;color:#2a1300;font-weight:900}
+.lh .lsel{display:inline-flex;align-items:center;gap:5px;border:0;background:transparent;font-weight:900;padding:6px 4px;min-height:40px}
+.lh .lsel svg,.lh>svg{width:20px;height:20px}
+.cn{width:34px;height:34px;border-radius:50%;border:0;background:rgba(0,0,0,.18);font-weight:900;font-size:20px;line-height:1}
+.ct{min-width:34px;text-align:center;font-family:'Lilita One',sans-serif;font-size:20px;font-weight:400;white-space:nowrap}
+.x{width:34px;height:34px;border-radius:50%;border:0;background:transparent;font-weight:900;font-size:16px;margin-left:auto}
+.lb{display:flex;flex-wrap:wrap;gap:6px;min-height:52px;padding:6px;border-radius:10px;background:#0a2416;align-items:center}
+.here{color:var(--soft);font-size:13px;font-weight:800;padding:0 4px}
+.pal{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:8px}
+.pb{display:flex;align-items:center;justify-content:center;gap:8px;min-height:54px;border:0;border-radius:14px;font-weight:900;font-size:16px;color:#1a1300;box-shadow:inset 0 -5px 0 rgba(0,0,0,.2)}
+.pb:active{transform:translateY(2px)}
+.pb.loopb{background:var(--LP)}.pb.close{background:var(--ink)}
+.pb:disabled{opacity:.45;cursor:default}
+.ctrl{display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px}
+.run{min-height:58px;border:0;border-radius:16px;background:var(--good);color:#0b2a10;font-family:'Lilita One',sans-serif;font-size:26px;box-shadow:inset 0 -6px 0 rgba(0,0,0,.2);display:flex;align-items:center;justify-content:center;gap:10px}
+.run.stop{background:var(--bad);color:#fff}
+.run svg{width:24px;height:24px}
+.gbtn{min-height:58px;border-radius:16px;border:2px solid var(--edge);background:var(--panel);font-weight:900}
+.gbtn:disabled,.run:disabled{opacity:.45;cursor:default}
+.link{justify-self:center;border:0;background:transparent;color:var(--soft);font-weight:800;text-decoration:underline;min-height:40px}
+.ov,.sheet{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:16px;background:rgba(4,16,9,.72)}
+.ov[hidden],.sheet[hidden]{display:none}
+.modal{width:min(440px,100%);max-height:calc(100% - 8px);overflow:auto;padding:22px 20px 18px;border-radius:22px;background:var(--ink);color:#163021;text-align:center;box-shadow:0 10px 0 #0a2416;animation:pop .35s cubic-bezier(.2,.9,.3,1.3)}
+@keyframes pop{from{transform:scale(.85);opacity:0}}
+.modal h2{font-size:clamp(30px,8vw,40px);line-height:1.05;color:#163021}
+.oart{width:84px;height:84px;margin:0 auto 6px}
+.stars{display:flex;justify-content:center;gap:6px;margin:10px 0 6px}
+.stars svg{width:46px;height:46px}
+.stars svg.on{animation:pop .4s both}
+.modal p{margin:8px 0;font-weight:700}
+.res{list-style:none;padding:0;margin:10px 0;display:grid;gap:6px;text-align:left}
+.res li{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:12px;background:#e8e2cc;font-weight:800}
+.res li .mb{width:30px;height:30px;flex:none}
+.res li .rs{margin-left:auto;white-space:nowrap;color:#9a6a00}
+.fact{margin:12px 0 4px;padding:12px 14px;border-radius:14px;background:#163021;color:var(--ink);text-align:left;font-weight:700}
+.fact b{display:block;font-family:'Lilita One',sans-serif;font-weight:400;font-size:19px;color:var(--F)}
+.obtns{display:grid;gap:8px;margin-top:14px}
+.obtns .run{width:100%;font-size:24px}
+.ghost{min-height:48px;border-radius:14px;border:2px solid #c9c1a5;background:transparent;font-weight:900;color:#163021}
+.demo{display:flex;justify-content:center;align-items:center;gap:6px;flex-wrap:wrap;margin:10px 0}
+.demo .loop{display:inline-flex}
+.sheetin{width:min(620px,100%);max-height:calc(100% - 8px);overflow:auto;padding:18px 18px 22px;border-radius:22px;background:var(--panel);border:2px solid var(--edge)}
+.shhead{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px}
+.shhead h2{font-size:30px;color:var(--F)}
+.sheetin h3{font-size:21px;margin:16px 0 8px}
+.pr{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.pr .cbtn{width:48px;height:48px;border-radius:12px;border:2px solid var(--edge);background:#0a2416;padding:4px;flex:none}
+.pr input{flex:1;min-height:48px;padding:8px 12px;border-radius:12px;border:2px solid var(--edge);background:#0a2416;color:var(--ink);font:800 16px Nunito,sans-serif}
+.pr .del{width:44px;height:44px;border-radius:12px;border:0;background:transparent;font-weight:900;font-size:18px;flex:none}
+.seg{display:flex;flex-wrap:wrap;gap:8px}
+.seg button{flex:1;min-height:46px;border-radius:12px;border:2px solid var(--edge);background:#0a2416;font-weight:900}
+.seg button[aria-pressed=true]{background:var(--F);color:#1a1300;border-color:var(--F)}
+.note{margin:8px 0 0;color:var(--soft);font-weight:700;font-size:15px}
+.stage{margin:0 0 10px;padding:12px;border-radius:16px;background:#0a2416;border-left:6px solid var(--sc)}
+.stage .sh{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.stage .sh b{font-family:'Lilita One',sans-serif;font-weight:400;font-size:20px;color:var(--sc)}
+.stage .sh span{color:var(--soft);font-weight:800;font-size:14px;white-space:nowrap}
+.stage p{margin:2px 0 8px;color:var(--soft);font-size:14px;font-weight:700}
+.lvls{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.lv{min-height:56px;border-radius:12px;border:2px solid var(--edge);background:var(--panel);font-weight:900;display:grid;place-items:center;padding:2px;line-height:1.1}
+.lv small{font-size:13px;color:var(--F);letter-spacing:1px}
+.lv.cur{border-color:var(--F)}
+.lv:disabled{opacity:.4;cursor:default}
+.toast{position:fixed;left:50%;top:14px;z-index:30;translate:-50% 0;padding:10px 18px;border-radius:999px;background:var(--ink);color:#163021;font-weight:900;opacity:0;pointer-events:none;transition:opacity .25s;max-width:calc(100% - 32px);text-align:center}
+.toast.show{opacity:1}
+.conf{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:25}
+.conf i{position:absolute;top:-14px;width:10px;height:14px;border-radius:2px;animation:fall 1.4s cubic-bezier(.3,.6,.5,1) forwards}
+@keyframes fall{to{transform:translate3d(var(--dx),105vh,0) rotate(var(--r))}}
+@media(prefers-reduced-motion:reduce){.chip,.modal,.stars svg.on,.cell.flash,.bot.shake,.blk.bug{animation:none}.bot{transition:none!important}}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="room.js"></script>
+<script src="memory.js"></script>
+</head>
+<body><div id="gc-strip" style="position:relative;z-index:2147483000;display:flex;align-items:center;height:34px;padding:0 max(12px,env(safe-area-inset-left,0px));background:#1c1c1e;color:#f4f4f4;font:700 14px/1 system-ui,-apple-system,Segoe UI,sans-serif;letter-spacing:.02em"><a href="index.html" style="color:#f4f4f4;text-decoration:none;display:inline-flex;align-items:center;gap:6px;padding:7px 10px;margin-left:-10px;border-radius:8px" aria-label="Back to the Game Closet"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>The Game Closet</a></div>
+<div class="app">
+  <header class="top">
+    <h1>Code Bot Quest</h1>
+    <div class="tbtns"><button class="pill" id="sndBtn" aria-pressed="true">Sound on</button><button class="pill" id="mmBtn">🃏 Memory Match</button><button class="pill" id="menuBtn">Levels &amp; players</button></div>
+  </header>
+  <div class="scores" id="scores"></div>
+  <main class="play">
+    <section class="boardcol" aria-label="Circuit board">
+      <div class="mission"><span class="stg" id="stg"></span><h2 id="lvlTitle"></h2><p id="tip"></p></div>
+      <div class="pcb" id="pcb"><div class="grid" id="grid"></div><div class="bot" id="bot"><div class="spin" id="spin"></div></div></div>
+    </section>
+    <section class="codecol" aria-label="Your program">
+      <div class="phead"><b id="turnLbl"></b><span id="bcount"></span></div>
+      <div class="prog" id="prog"></div>
+      <div class="pal" id="pal">
+        <button class="pb bF" data-op="F" id="pbF"></button>
+        <button class="pb bL" data-op="L" id="pbL"></button>
+        <button class="pb bR" data-op="R" id="pbR"></button>
+        <button class="pb loopb" data-op="loop" id="pbLoop"></button>
+        <button class="pb close" data-op="close" id="pbClose" hidden>Done with Repeat</button>
+      </div>
+      <div class="ctrl"><button class="run" id="runBtn"></button><button class="gbtn" id="undoBtn">Undo</button><button class="gbtn" id="clearBtn">Clear</button></div>
+      <button class="link" id="skipBtn">Skip this level</button>
+    </section>
+  </main>
+</div>
+
+<div class="sheet" id="sheet" hidden>
+  <div class="sheetin" role="dialog" aria-modal="true" aria-labelledby="shT">
+    <div class="shhead"><h2 id="shT">Levels &amp; players</h2><button class="pill" id="shClose">Done</button></div>
+    <h3>Who's coding?</h3>
+    <div id="plist"></div>
+    <button class="pill" id="addP">Add a player</button>
+    <h3>How you play</h3>
+    <div class="seg" id="modeSeg"><button data-m="challenge" id="mChal">Take turns</button><button data-m="team" id="mTeam">Team up</button></div>
+    <p class="note" id="modeNote"></p>
+    <div class="seg" id="spdSeg" style="margin-top:10px"><button data-s="0" id="spdN">Normal speed</button><button data-s="1" id="spdF">Fast robot</button></div>
+    <h3>Stages</h3>
+    <div id="stageList"></div>
+    <button class="link" id="resetBtn">Start over from Stage 1</button>
+  </div>
+</div>
+
+<div class="ov" id="ov" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="ovT">
+    <div class="oart" id="ovArt"></div>
+    <h2 id="ovT"></h2>
+    <div class="stars" id="ovS"></div>
+    <div id="ovB"></div>
+    <div class="fact" id="ovF" hidden></div>
+    <div class="obtns"><button class="run" id="ovP"></button><button class="ghost" id="ovA" hidden></button></div>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+{
+const DIRS=[[0,-1],[1,0],[0,1],[-1,0]],DCH={'^':0,'>':1,'v':2,'<':3};
+const STAGES=[
+ {name:'Boot Up',blurb:'Forward and turns: put steps in the right order.',color:'#ffcf3f'},
+ {name:'Power Chips',blurb:'Grab every chip, dodge the water.',color:'#3fd6ff'},
+ {name:'Loop Lab',blurb:'Repeat blocks do the boring parts for you.',color:'#ff9f3a'},
+ {name:'Switch Station',blurb:'Roll over a switch to open its gate.',color:'#b98cff'},
+ {name:'Boss Board',blurb:'Loops inside loops, switches and chips.',color:'#ff6b8b'}
+];
+const LEVELS=[
+ {s:0,name:'Hello, robot',par:3,map:['......','.>..G.','......'],tip:'Add Forward blocks until your robot reaches the charger, then press Run.',fact:'The word "robot" comes from a 1920 Czech play called R.U.R. It comes from "robota," which means hard, forced work.'},
+ {s:0,name:'Long road',par:5,map:['........','.>....G.','........'],tip:'Count the squares to the charger. One Forward moves one square.',fact:'Nobody drives a Mars rover with a joystick. Radio signals take several minutes to get there, so engineers send a list of commands, just like your program.'},
+ {s:0,name:'Corner turn',par:5,map:['#####','#>..#','###.#','###G#','#####'],tip:'Turns happen in place. Turn right means the robot\'s own right, so imagine sitting in the driver\'s seat.',fact:'Ada Lovelace wrote what many call the first computer program in 1843, for a machine that was never even finished.'},
+ {s:0,name:'Left turn',par:5,map:['#####','#G..#','###.#','###^#','#####'],tip:'Your robot starts facing up this time. Which way is its left?',fact:'The very first computer mouse, built in the 1960s, had a wooden shell.'},
+ {s:0,name:'S-bend',par:9,map:['######','#>.###','##.###','##...#','####G#','######'],tip:'Right, then left, then right again. Trace it with your finger first.',fact:'ENIAC, one of the first electronic computers, was finished in 1945. It weighed about 30 tons and filled a whole room.'},
+ {s:1,name:'Power chip',par:10,map:['######','#>.c.#','####.#','#G...#','######'],tip:'Grab every power chip before you dock at the charger.',fact:'Computers think in binary: just 1s and 0s. Each 1 or 0 is a bit, and 8 bits make one byte.'},
+ {s:1,name:'Splash zone',par:11,map:['#######','#>.~.G#','#.#.#.#','#.....#','#######'],tip:'Robots and water don\'t mix! Find the dry path around.',fact:'In 1947, engineers found a real moth stuck inside the Harvard Mark II computer. They taped it in their logbook as the "first actual case of bug being found."'},
+ {s:1,name:'U-turn',par:11,map:['########','#~~~~~~#','#c.>..G#','#~~~~~~#','########'],tip:'The chip is behind you. Two turns make a U-turn.',fact:'Computers often count from 0, so the first thing in a list is usually item number 0.'},
+ {s:1,name:'Chip trail',par:9,map:['#######','#v#####','#.#####','#c...c#','#~~~~G#','#######'],tip:'Facing down, a left turn points your robot to the right side of the screen. Tricky!',fact:'The first text message was sent in 1992. It said "Merry Christmas."'},
+ {s:1,name:'Island hop',par:13,map:['########','#>.c~.G#','#.#.~c.#','#......#','########'],tip:'Cross the water on the bottom bridge, then come back up for the second chip.',fact:'Most internet data between continents travels as flashes of light through glass cables on the ocean floor.'},
+ {s:2,name:'Loop the loop',par:2,loopIntro:true,map:['........','>......G','........'],tip:'New block: Repeat! Tap Repeat, put one Forward inside it, then tap + until it says 7.',fact:'Loops are everywhere. Many video games redraw the whole screen about 60 times every second, inside one big loop.'},
+ {s:2,name:'Hallway',par:8,map:['##########','#>.......#','########.#','#G.......#','##########'],tip:'Use a Repeat for each long hallway.',fact:'Traffic lights run on loops too: green, yellow, red, and repeat.'},
+ {s:2,name:'Staircase',par:5,map:['######','#>.###','##..##','###..#','####G#','######'],tip:'See a pattern that repeats? Put the whole pattern inside one Repeat.',fact:'Scratch, a coding language made for kids at MIT, uses snap-together blocks a lot like these.'},
+ {s:2,name:'Chip circuit',par:5,map:['######','#>..c#','#~##.#','#~##.#','#G..c#','######'],tip:'Collect both chips. Your robot drives the same shape three times.',fact:'The International Space Station loops around Earth about 16 times every day.'},
+ {s:2,name:'Zigzag',par:7,map:['#######','#####G#','###~#.#','###...#','###.###','#>..~##','#######'],tip:'Zig, zag, repeat! Find the part that happens twice.',fact:'QR codes were invented in Japan in 1994 to keep track of car parts in factories.'},
+ {s:3,name:'Flip the switch',par:2,switchIntro:true,map:['##########','#>.a..A.G#','##########'],tip:'Gates stay shut until your robot rolls over the matching switch.',fact:'A light switch is either on or off, like a 1 or a 0. That\'s exactly how a bit works.'},
+ {s:3,name:'Switch detour',par:9,map:['########','#v..A.G#','#.######','#a######','########'],tip:'The switch is down the side path. Go press it, then come back.',fact:'A computer chip is packed with billions of tiny switches called transistors.'},
+ {s:3,name:'Two switches',par:5,map:['#########','#>a.b.A.#','#~~~~~~B#','#~~~~~~G#','#########'],tip:'Each color of switch opens the gate with the same color.',fact:'Factory robot arms weld and paint car bodies, following programs that repeat the same moves thousands of times.'},
+ {s:3,name:'Switch back',par:8,map:['#########','#a.>.A.G#','#########'],tip:'The switch is behind you. U-turn, press it, then U-turn again.',fact:'The first website went online in 1991. A copy of it is still online today.'},
+ {s:3,name:'Control room',par:8,map:['########','#a.Ac..#','#.~~~~.#','#c~~~~b#','#.~~~~B#','#^~~~~G#','########'],tip:'Chips, two switches and two gates. Three long hallways, three Repeats.',fact:'A gigabyte is about a billion bytes. One song file is usually only a few megabytes.'},
+ {s:4,name:'Bug maze',par:14,map:['########','#v~~c..#','#.~~.~.#','#.~~.~.#','#.~~.~.#','#...c~G#','########'],tip:'Long hallways are perfect for Repeat. Your robot starts facing down.',fact:'In 2021, NASA\'s Ingenuity helicopter made the first powered flight on another planet: Mars!'},
+ {s:4,name:'Loop in a loop',par:4,map:['########','#>....c#','#G~~~~.#','#.~~~~.#','#.~~~~.#','#.~~~~.#','#c....c#','########'],tip:'You can put a Repeat inside another Repeat. Programmers call that a nested loop.',fact:'Nested loops are how a computer draws a picture on your screen: one loop for each row, and a loop inside it for each dot in the row.'},
+ {s:4,name:'Giant stairs',par:7,map:['#########','#>...####','####.####','####.####','####c..c#','#######.#','#######.#','#######G#','#########'],tip:'Three steps, turn, three steps, turn. Can a Repeat hold the three steps?',fact:'The Apollo 11 computer that helped land astronauts on the Moon had about 4 kilobytes of working memory. Phones today have millions of times more.'},
+ {s:4,name:'Gate square',par:4,map:['#######','#>.a.c#','#~~~~.#','#G~~~A#','#B~~~.#','#c.b.c#','#######'],tip:'Around the square once. Four sides, each side the same.',fact:'The Hubble Space Telescope zooms all the way around Earth about every 95 minutes.'},
+ {s:4,name:'Final boss',par:4,map:['#########','#>..c..a#','#~~~~~~.#','#G~~~~~.#','#A~~~~~c#','#.~~~~~b#','#.~~~~~.#','#c..B...#','#########'],tip:'The biggest board yet, and it still only needs four blocks.',fact:'The first Game Boy came out in 1989, and its games were built from the same pieces you just used: steps, loops and on/off switches.'}
+];
+function parse(L){const rows=L.map,h=rows.length,w=Math.max(...rows.map(r=>r.length)),cells=[],chips=[],sw=[],gates=[];let start=null,goal=null;
+ for(let y=0;y<h;y++)for(let x=0;x<w;x++){const ch=rows[y][x]||'#';let t='floor';
+  if(ch==='#')t='wall';else if(ch==='~')t='water';else if(ch==='c')chips.push(x+','+y);else if(ch==='G'){t='goal';goal=[x,y]}
+  else if(ch==='a'||ch==='b'){t='sw'+ch;sw.push([x,y,ch])}else if(ch==='A'||ch==='B'){t='gate'+ch.toLowerCase();gates.push([x,y,ch.toLowerCase()])}
+  else if(ch in DCH)start={x,y,d:DCH[ch]};cells.push(t)}
+ return{w,h,cells,start,chips,goal,sw,gates,at:(x,y)=>x<0||y<0||x>=w||y>=h?'out':cells[y*w+x]}}
+function flatten(nodes,pre,out,loops){for(let i=0;i<nodes.length;i++){const n=nodes[i],p=pre===''?''+i:pre+'.'+i;
+ if(n.t==='loop'){for(let k=0;k<n.n;k++){flatten(n.body,p,out,loops.concat([[p,k+1,n.n]]));if(out.length>500)return}}else out.push({op:n.t,path:p,loops})}}
+const count=ns=>ns.reduce((a,n)=>a+1+(n.t==='loop'?count(n.body):0),0);
+function simulate(P,prog){const steps=[];flatten(prog,'',steps,[]);
+ let x=P.start.x,y=P.start.y,d=P.start.d,rot=d*90,result='short';const got=[],open=[],frames=[];
+ for(let i=0;i<steps.length&&i<500;i++){const s=steps[i],f={step:s};
+  if(s.op==='L'){d=(d+3)%4;rot-=90;f.ev='turn'}else if(s.op==='R'){d=(d+1)%4;rot+=90;f.ev='turn'}
+  else{const nx=x+DIRS[d][0],ny=y+DIRS[d][1],t=P.at(nx,ny);
+   const shut=t.startsWith('gate')&&!open.includes(t.slice(4));
+   if(t==='wall'||t==='out'||shut){Object.assign(f,{x,y,rot,got:got.slice(),open:open.slice(),bump:[nx,ny],ev:t==='out'?'edge':shut?'gate':'wall'});frames.push(f);result=f.ev;break}
+   x=nx;y=ny;f.ev='move';const k=x+','+y;
+   if(P.chips.includes(k)&&!got.includes(k)){got.push(k);f.ev='chip'}
+   if(t.startsWith('sw')&&!open.includes(t.slice(2))){open.push(t.slice(2));f.ev='switch';f.sw=t.slice(2)}
+   if(t==='water'){Object.assign(f,{x,y,rot,got:got.slice(),open:open.slice(),ev:'water'});frames.push(f);result='water';break}
+   if(t==='goal'&&got.length===P.chips.length){Object.assign(f,{x,y,rot,got:got.slice(),open:open.slice(),ev:'goal'});frames.push(f);result='win';break}}
+  Object.assign(f,{x,y,rot,got:got.slice(),open:open.slice()});frames.push(f)}
+ if(result==='short'&&P.goal&&x===P.goal[0]&&y===P.goal[1])result='chips';
+ return{frames,result}}
+const starsFor=(b,par)=>b<=par?3:b<=par+2?2:1;
+if(typeof module!=='undefined')module.exports={LEVELS,STAGES,parse,simulate,count,starsFor};
+
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const COLORS=['#ff7a45','#3fa7ff','#b56cff','#2fd18b','#ff5fa2'];
+const SWC={a:'#ff5fd2',b:'#7cf05a'};
+const MAXB=30,KEY='code-bot-quest-v1',MAXP=4;
+const IC={
+ F:'<svg viewBox="0 0 24 24"><path d="M12 3l7 8h-4.5v10h-5V11H5z" fill="currentColor"/></svg>',
+ L:'<svg viewBox="0 0 24 24"><path d="M9 4L3 9.5 9 15v-3.5h5.5A3.5 3.5 0 0 1 18 15v6h3v-6a6.5 6.5 0 0 0-6.5-6.5H9z" fill="currentColor"/></svg>',
+ R:'<svg viewBox="0 0 24 24"><path d="M15 4l6 5.5-6 5.5v-3.5H9.5A3.5 3.5 0 0 0 6 15v6H3v-6a6.5 6.5 0 0 1 6.5-6.5H15z" fill="currentColor"/></svg>',
+ loop:'<svg viewBox="0 0 24 24"><path d="M17 2l4 4-4 4V7H8a3 3 0 0 0-3 3v1H2v-1a6 6 0 0 1 6-6h9zM7 22l-4-4 4-4v3h9a3 3 0 0 0 3-3v-1h3v1a6 6 0 0 1-6 6H7z" fill="currentColor"/></svg>',
+ play:'<svg viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z" fill="currentColor"/></svg>',
+ stop:'<svg viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="3" fill="currentColor"/></svg>'};
+const NAME={F:'Forward',L:'Turn left',R:'Turn right'};
+const botSVG=c=>`<svg viewBox="0 0 100 100" aria-hidden="true"><rect x="11" y="20" width="17" height="60" rx="7" fill="#1b2026"/><rect x="72" y="20" width="17" height="60" rx="7" fill="#1b2026"/>${[28,40,52,64].map(y=>`<rect x="14" y="${y}" width="11" height="4" rx="2" fill="#46505b"/><rect x="75" y="${y}" width="11" height="4" rx="2" fill="#46505b"/>`).join('')}<path d="M50 2l10 12H40z" fill="${c}"/><rect x="22" y="13" width="56" height="73" rx="18" fill="${c}"/><rect x="22" y="56" width="56" height="30" rx="15" fill="#000" opacity=".15"/><rect x="29" y="19" width="42" height="25" rx="10" fill="#14202b"/><circle cx="40" cy="31" r="6" fill="#8ff6ff"/><circle cx="60" cy="31" r="6" fill="#8ff6ff"/><circle cx="42" cy="29" r="2" fill="#fff"/><circle cx="62" cy="29" r="2" fill="#fff"/><circle cx="50" cy="66" r="7" fill="#fff" opacity=".45"/></svg>`;
+const chipSVG=`<svg viewBox="0 0 100 100" aria-hidden="true"><g fill="#cfd4da">${[33,46,59].map(v=>`<rect x="${v}" y="16" width="8" height="13" rx="2"/><rect x="${v}" y="71" width="8" height="13" rx="2"/><rect x="16" y="${v}" width="13" height="8" rx="2"/><rect x="71" y="${v}" width="13" height="8" rx="2"/>`).join('')}</g><rect x="26" y="26" width="48" height="48" rx="7" fill="#15181d" stroke="#3b414a" stroke-width="2"/><circle cx="36" cy="36" r="4" fill="#e3b04b"/><path d="M41 55h18M41 62h11" stroke="#5a616b" stroke-width="3.5" stroke-linecap="round"/></svg>`;
+const SVGS={
+ goal:`<svg viewBox="0 0 100 100" aria-hidden="true"><rect x="10" y="10" width="80" height="80" rx="18" fill="#f6f2e4" stroke="#e3b04b" stroke-width="5"/><path d="M56 18L33 54h15l-5 28 25-38H53z" fill="#ffcf3f" stroke="#a86b00" stroke-width="3" stroke-linejoin="round"/></svg>`,
+ wall:`<svg viewBox="0 0 100 100" aria-hidden="true"><path d="M0 50h18M82 50h18" stroke="#cfd4da" stroke-width="5"/><rect x="15" y="29" width="70" height="42" rx="19" fill="#e7c891" stroke="#a9874f" stroke-width="3"/><rect x="34" y="30" width="7" height="40" fill="#c0392b"/><rect x="47" y="30" width="7" height="40" fill="#6b3fa0"/><rect x="60" y="30" width="7" height="40" fill="#d4a017"/></svg>`,
+ water:`<svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><rect width="100" height="100" rx="10" fill="#2f8fe0"/><path d="M8 34q10.5-9 21 0t21 0 21 0 21 0M8 66q10.5-9 21 0t21 0 21 0 21 0" fill="none" stroke="#bfe6ff" stroke-width="5" stroke-linecap="round"/></svg>`};
+const swSVG=c=>`<svg viewBox="0 0 100 100" aria-hidden="true"><rect x="16" y="16" width="68" height="68" rx="16" fill="#1b2026"/><circle class="knob" cx="50" cy="50" r="21" fill="${c}"/><circle cx="50" cy="50" r="21" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="3"/></svg>`;
+const gateSVG=c=>`<svg viewBox="0 0 100 100" aria-hidden="true"><rect x="5" y="5" width="90" height="90" rx="12" fill="#1b2026"/><g class="bars">${[20,40,60,80].map(x=>`<rect x="${x-6}" y="10" width="12" height="80" rx="5" fill="${c}"/>`).join('')}</g></svg>`;
+const starSVG=on=>`<svg viewBox="0 0 24 24" class="${on?'on':''}" aria-hidden="true"><path d="M12 2.5l2.9 6 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.2 1.3-6.6L2.5 9.3l6.6-.8z" fill="${on?'#ffcf3f':'#d9d2b8'}" stroke="${on?'#b07800':'#bdb59a'}" stroke-width="1.4" stroke-linejoin="round"/></svg>`;
+
+/* ---------- state ---------- */
+let S={players:[{name:'Dad',c:0},{name:'Kid',c:1}],mode:'challenge',lvl:0,unlocked:0,turn:0,res:[],scores:[0,0],team:0,best:[],fast:false,sound:true,intro:{}};
+let prog=[],cursor=[],P=null,running=false,stopReq=false,bugPath='',fails=0,CELL=40,GAP=4,PAD=14,pos={x:0,y:0,rot:0};
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+const isTeam=()=>S.mode==='team'||S.players.length<2;
+const curP=()=>S.players[isTeam()?0:S.turn]||S.players[0];
+const col=i=>COLORS[(S.players[i]||S.players[0]).c%COLORS.length];
+const spd=()=>S.fast?190:430;
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+const loopsOK=()=>LEVELS[S.lvl].s>=2;
+let toastT=null;function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2200)}
+
+/* ---------- sound ---------- */
+let AC=null;
+function ac(){if(!AC){try{AC=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}}if(AC&&AC.state==='suspended')try{AC.resume()}catch(e){}return AC}
+function tone(f,t0,d,type,v){if(!S.sound)return;const a=ac();if(!a)return;try{const o=a.createOscillator(),g=a.createGain(),s=a.currentTime+t0;o.type=type||'square';o.frequency.value=f;g.gain.setValueAtTime(.0001,s);g.gain.linearRampToValueAtTime(v||.06,s+.01);g.gain.exponentialRampToValueAtTime(.0001,s+d);o.connect(g);g.connect(a.destination);o.start(s);o.stop(s+d+.05)}catch(e){}}
+const SFX={add:()=>tone(880,0,.05,'square',.04),step:()=>tone(520,0,.07,'square',.045),turn:()=>{tone(700,0,.05);tone(940,.05,.05)},
+ chip:()=>[988,1319,1760].forEach((f,i)=>tone(f,i*.05,.12,'triangle',.08)),sw:()=>{tone(300,0,.08,'square',.07);tone(1200,.06,.12,'triangle',.08)},
+ bonk:()=>{tone(140,0,.18,'sawtooth',.09);tone(95,.08,.22,'sawtooth',.08)},splash:()=>[600,450,320,220].forEach((f,i)=>tone(f,i*.06,.12,'sine',.08)),
+ win:()=>[523,659,784,1047,1319].forEach((f,i)=>tone(f,i*.09,.22,'triangle',.09)),
+ fanfare:()=>[523,659,784,1047,0,784,1047,1319].forEach((f,i)=>f&&tone(f,i*.13,.3,'triangle',.1))};
+
+/* ---------- board ---------- */
+function renderBoard(){
+  P=parse(LEVELS[S.lvl]);const g=$('grid');
+  g.innerHTML=P.cells.map((t,i)=>{const x=i%P.w,y=Math.floor(i/P.w),k=x+','+y;
+    let inner=SVGS[t]||'';if(t==='swa'||t==='swb')inner=swSVG(SWC[t[2]]);if(t==='gatea'||t==='gateb')inner=gateSVG(SWC[t[4]]);
+    const chip=P.chips.includes(k)?`<span class="chip" id="ch-${x}-${y}">${chipSVG}</span>`:'';
+    const sw=t.startsWith('sw')?` style="--sw:${SWC[t[2]]}"`:'';
+    return`<div class="cell ${t}" id="c-${x}-${y}"${sw}>${inner}${chip}</div>`}).join('');
+  $('spin').innerHTML=botSVG(col(isTeam()?0:S.turn));
+  layout();resetBot();
+}
+function layout(){
+  if(!P)return;const box=$('pcb'),avail=box.parentElement.clientWidth||340;
+  const maxH=Math.max(230,Math.min(window.innerHeight*.5,560));
+  let c=Math.floor(Math.min((avail-2*PAD-GAP*(P.w-1))/P.w,(maxH-2*PAD-GAP*(P.h-1))/P.h,76));CELL=Math.max(24,c);
+  const g=$('grid');g.style.left=g.style.top=PAD+'px';g.style.gridTemplateColumns=`repeat(${P.w},${CELL}px)`;g.style.gridAutoRows=CELL+'px';g.style.gap=GAP+'px';
+  box.style.width=(2*PAD+P.w*CELL+(P.w-1)*GAP)+'px';box.style.height=(2*PAD+P.h*CELL+(P.h-1)*GAP)+'px';
+  const b=$('bot');b.style.width=b.style.height=CELL+'px';placeBot(pos,false);
+}
+function placeBot(p,anim){pos={x:p.x,y:p.y,rot:p.rot};const b=$('bot'),s=$('spin'),t=anim?spd()*.85:0;
+  b.style.transition=`transform ${t}ms ease`;s.style.transition=`transform ${t}ms ease`;
+  b.style.transform=`translate(${PAD+p.x*(CELL+GAP)}px,${PAD+p.y*(CELL+GAP)}px)`;s.style.transform=`rotate(${p.rot}deg)`}
+function resetBot(){const b=$('bot');b.classList.remove('sink','shake');
+  document.querySelectorAll('.chip.got').forEach(e=>e.classList.remove('got'));
+  document.querySelectorAll('.cell.on,.cell.open,.cell.flash').forEach(e=>e.classList.remove('on','open','flash'));
+  placeBot({x:P.start.x,y:P.start.y,rot:P.start.d*90},false)}
+new ResizeObserver(()=>layout()).observe(document.querySelector('.boardcol'));
+
+/* ---------- program editing ---------- */
+const container=()=>{let a=prog;for(const i of cursor)a=a[i].body;return a};
+const nodeAt=path=>{let a=prog,n=null;for(const i of path){n=a[i];a=n?n.body||[]:[]}return n};
+function edited(){bugPath='';renderProg();save()}
+function addOp(op){
+  if(running)return;
+  if(op==='close'){cursor=cursor.slice(0,-1);renderProg();return}
+  if(count(prog)>=MAXB){toast(`${MAXB} blocks is the most a robot can hold.`);return}
+  const c=container();ac();SFX.add();
+  if(op==='loop'){c.push({t:'loop',n:2,body:[]});cursor=cursor.concat(c.length-1)}else c.push({t:op});
+  edited();
+}
+function removeAt(path){
+  let a=prog;for(const i of path.slice(0,-1))a=a[i].body;a.splice(path[path.length-1],1);
+  const k=path.length-1;cursor=cursor.slice();
+  if(cursor.length>k&&cursor.slice(0,k).join()===path.slice(0,k).join()){if(cursor[k]===path[k])cursor=path.slice(0,k);else if(cursor[k]>path[k])cursor[k]--}
+  edited()}
+function undo(){if(running)return;const c=container();if(c.length)c.pop();else if(cursor.length){removeAt(cursor.slice());return}edited()}
+function nodesHTML(nodes,pre){return nodes.map((n,i)=>{const p=pre===''?''+i:pre+'.'+i;
+  if(n.t==='loop'){const open=cursor.join('.')===p;
+    return`<div class="loop${open?' open':''}${bugPath===p?' bug':''}" data-loop="${p}"><div class="lh"><button class="lsel" data-act="sel" data-path="${p}" aria-label="Add blocks inside this Repeat">${IC.loop}Repeat</button><button class="cn" data-act="dec" data-path="${p}" aria-label="Repeat fewer times">−</button><b class="ct" data-ct="${p}">${n.n}×</b><button class="cn" data-act="inc" data-path="${p}" aria-label="Repeat more times">+</button><button class="x" data-act="del" data-path="${p}" aria-label="Delete this Repeat">✕</button></div><div class="lb">${nodesHTML(n.body,p)}${open?'<span class="here">Add blocks here</span>':''}</div></div>`}
+  return`<button class="blk b${n.t}${bugPath===p?' bug':''}" data-act="del" data-path="${p}" data-node="${p}" aria-label="${NAME[n.t]}. Tap to remove">${IC[n.t]}${n.t==='F'?'Forward':n.t==='L'?'Left':'Right'}</button>`}).join('')}
+function renderProg(){
+  $('prog').innerHTML=prog.length?nodesHTML(prog,''):`<span class="empty">Tap the blocks below to build your program.</span>`;
+  const b=count(prog),lv=LEVELS[S.lvl];$('bcount').textContent=`${b} block${b===1?'':'s'}, par ${lv.par}`;
+  $('pbLoop').hidden=!loopsOK();$('pbClose').hidden=!cursor.length;
+  for(const id of['pbF','pbL','pbR','pbLoop','pbClose','undoBtn','clearBtn'])$(id).disabled=running;
+  $('runBtn').className='run'+(running?' stop':'');$('runBtn').innerHTML=running?IC.stop+'Stop':IC.play+'Run';
+}
+$('pbF').innerHTML=IC.F+'Forward';$('pbL').innerHTML=IC.L+'Turn left';$('pbR').innerHTML=IC.R+'Turn right';$('pbLoop').innerHTML=IC.loop+'Repeat';
+$('pal').addEventListener('click',e=>{const b=e.target.closest('.pb');if(b&&!b.disabled)addOp(b.dataset.op)});
+$('prog').addEventListener('click',e=>{if(running)return;const b=e.target.closest('[data-act]');if(!b)return;
+  const path=b.dataset.path.split('.').map(Number),n=nodeAt(path),a=b.dataset.act;
+  if(a==='del')removeAt(path);else if(a==='sel'){cursor=path;renderProg()}
+  else if(a==='inc'||a==='dec'){n.n=Math.max(2,Math.min(9,n.n+(a==='inc'?1:-1)));SFX.add();edited()}});
+$('undoBtn').addEventListener('click',undo);
+$('clearBtn').addEventListener('click',()=>{if(running||!prog.length)return;prog=[];cursor=[];edited();resetBot()});
+
+/* ---------- running ---------- */
+function mark(step){document.querySelectorAll('#prog .on').forEach(e=>e.classList.remove('on'));
+  if(!step)return;const el=document.querySelector(`[data-node="${step.path}"]`);if(el)el.classList.add('on');
+  document.querySelectorAll('[data-ct]').forEach(e=>{const n=nodeAt(e.dataset.ct.split('.').map(Number));if(n)e.textContent=n.n+'×'});
+  for(const[lp,k,n]of step.loops){const L=document.querySelector(`[data-loop="${lp}"]`);if(L)L.classList.add('on');const c=document.querySelector(`[data-ct="${lp}"]`);if(c)c.textContent=`${k} of ${n}`}}
+async function run(){
+  if(running){stopReq=true;return}
+  if(!count(prog)){toast('Add some blocks first!');return}
+  ac();const sim=simulate(P,prog);running=true;stopReq=false;bugPath='';renderProg();resetBot();await wait(250);
+  for(const f of sim.frames){
+    if(stopReq)break;mark(f.step);
+    if(f.ev==='wall'||f.ev==='edge'||f.ev==='gate'){
+      const dx=(f.bump[0]-f.x)*.3,dy=(f.bump[1]-f.y)*.3;placeBot({x:f.x+dx,y:f.y+dy,rot:f.rot},true);SFX.bonk();await wait(spd()*.6);
+      placeBot({x:f.x,y:f.y,rot:f.rot},true);$('bot').classList.add('shake');const c=$(`c-${f.bump[0]}-${f.bump[1]}`);if(c)c.classList.add('flash');await wait(spd());break}
+    placeBot({x:f.x,y:f.y,rot:f.rot},true);
+    if(f.ev==='turn')SFX.turn();else SFX.step();
+    await wait(spd()*.6);
+    if(f.ev==='chip'){const k=f.got[f.got.length-1].split(',');$(`ch-${k[0]}-${k[1]}`).classList.add('got');SFX.chip()}
+    if(f.ev==='switch'){SFX.sw();$(`c-${f.x}-${f.y}`).classList.add('on');P.gates.filter(g=>g[2]===f.sw).forEach(g=>$(`c-${g[0]}-${g[1]}`).classList.add('open'))}
+    if(f.ev==='water'){$('bot').classList.add('sink');SFX.splash();await wait(500)}
+    await wait(spd()*.4);
+  }
+  const stopped=stopReq;running=false;mark(null);document.querySelectorAll('#prog .on').forEach(e=>e.classList.remove('on'));
+  if(stopped){renderProg();resetBot();return}
+  const last=sim.frames[sim.frames.length-1];
+  if(sim.result==='win'){renderProg();SFX.win();confetti();await wait(300);win(count(prog));return}
+  if(['wall','edge','gate','water'].includes(sim.result)&&last)bugPath=last.step.path;
+  renderProg();fails++;fail(sim.result);
+}
+$('runBtn').addEventListener('click',run);
+
+/* ---------- overlays ---------- */
+let ovP=null,ovA=null;
+function showOv(o){
+  $('ovArt').innerHTML=o.art||'';$('ovArt').hidden=!o.art;$('ovT').textContent=o.title;
+  $('ovS').innerHTML=o.stars>=0?[1,2,3].map(i=>starSVG(i<=o.stars)).join(''):'';$('ovS').hidden=!(o.stars>=0);
+  [...$('ovS').children].forEach((s,i)=>s.style.animationDelay=(i*.15)+'s');
+  $('ovB').innerHTML=o.body||'';$('ovF').hidden=!o.fact;$('ovF').innerHTML=o.fact?`<b>Tech byte</b>${esc(o.fact)}`:'';
+  $('ovP').innerHTML=esc(o.primary[0]);ovP=o.primary[1];$('ovA').hidden=!o.alt;if(o.alt){$('ovA').textContent=o.alt[0];ovA=o.alt[1]}
+  $('ov').hidden=false;setTimeout(()=>$('ovP').focus(),50)}
+const hideOv=()=>{$('ov').hidden=true};
+$('ovP').addEventListener('click',()=>{hideOv();ovP&&ovP()});
+$('ovA').addEventListener('click',()=>{hideOv();ovA&&ovA()});
+const FAILS={wall:['Bonk!','Your robot bumped into a part on the board.'],edge:['Whoa!','Your robot almost drove off the edge of the board.'],
+ gate:['Gate closed!','Roll over the matching switch first to open it.'],water:['Splash!','Robots and water don\'t mix.'],
+ chips:['So close!','Grab every power chip before you dock at the charger.'],short:['Out of blocks','Your robot stopped before it reached the charger. Add more blocks.']};
+function fail(r){const[t,m]=FAILS[r]||FAILS.short;
+  const bug=bugPath?'<p>The red block is where things went wrong. Change it, then run again.</p>':'';
+  const hint=fails>=2?`<p><b>Hint:</b> ${esc(LEVELS[S.lvl].tip)}</p>`:'';
+  showOv({art:botSVG(col(isTeam()?0:S.turn)),title:t,body:`<p>${esc(m)}</p>${bug}${hint}`,primary:['Debug it',()=>{resetBot()}]})}
+function confetti(){if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;const box=document.createElement('div');box.className='conf';box.setAttribute('aria-hidden','true');
+  const cs=['#ffcf3f','#5cc8ff','#ff7ab6','#ff9f3a','#7cf05a','#f6f2e4'];
+  for(let i=0;i<36;i++){const e=document.createElement('i');e.style.left=Math.random()*100+'%';e.style.background=cs[i%cs.length];e.style.setProperty('--dx',((Math.random()-.5)*160|0)+'px');e.style.setProperty('--r',((Math.random()-.5)*900|0)+'deg');e.style.animationDelay=(Math.random()*.25).toFixed(2)+'s';box.appendChild(e)}
+  document.body.appendChild(box);setTimeout(()=>box.remove(),1900)}
+const parLine=(b,par)=>b<=par?`You used ${b} block${b===1?'':'s'}. That's par!`:`You used ${b} blocks. Par is ${par}. Can you do it in fewer?`;
+function win(b){
+  const lv=LEVELS[S.lvl],st=starsFor(b,lv.par);S.best[S.lvl]=Math.max(S.best[S.lvl]||0,st);fails=0;
+  if(isTeam()){S.team+=st;save();renderScores();levelDone([{i:0,st,b}]);return}
+  S.res[S.turn]={st,b};S.scores[S.turn]=(S.scores[S.turn]||0)+st;save();renderScores();
+  if(S.turn<S.players.length-1){const me=S.players[S.turn],nx=S.players[S.turn+1];
+    showOv({art:botSVG(col(S.turn)),title:`Nice coding, ${me.name}!`,stars:st,body:`<p>${parLine(b,lv.par)}</p><p>Now it's ${esc(nx.name)}'s turn on the same board.</p>`,primary:[`${nx.name}'s turn`,nextTurn]});return}
+  levelDone(S.res.map((r,i)=>({i,st:r?r.st:0,b:r?r.b:null})));
+}
+function levelDone(rows){
+  const i=S.lvl,lv=LEVELS[i],lastInStage=i===LEVELS.length-1||LEVELS[i+1].s!==lv.s,lastAll=i===LEVELS.length-1;
+  S.unlocked=Math.max(S.unlocked,Math.min(i+1,LEVELS.length-1));save();
+  let body='';
+  if(isTeam()){const r=rows[0];body=r.b==null?'<p>Skipped for now. You can come back from the Levels menu.</p>':`<p>${parLine(r.b,lv.par)}</p>`}
+  else{const done=rows.filter(r=>r.b!=null);let wl='';
+    if(done.length){const top=Math.max(...done.map(r=>r.st)),cand=done.filter(r=>r.st===top),minb=Math.min(...cand.map(r=>r.b)),w=cand.filter(r=>r.b===minb);
+      wl=w.length===1&&done.length>1?`<p><b>${esc(S.players[w[0].i].name)} wins this level</b>${cand.length>1?' with the fewest blocks':''}!</p>`:done.length>1?'<p><b>It\'s a tie!</b> Great coding, everyone.</p>':''}
+    body=`<ul class="res">${rows.map(r=>`<li>${botSVG(col(r.i)).replace('<svg','<svg class="mb"')}<span>${esc(S.players[r.i].name)}</span><span class="rs">${r.b==null?'skipped':'★'.repeat(r.st)+` ${r.b} blocks`}</span></li>`).join('')}</ul>${wl}`}
+  const stars=isTeam()&&rows[0].b!=null?rows[0].st:-1;
+  if(lastInStage){const st=STAGES[lv.s],got=LEVELS.map((l,j)=>l.s===lv.s?(S.best[j]||0):0).reduce((a,b)=>a+b,0);
+    SFX.fanfare();confetti();
+    showOv({art:trophy(st.color),title:lastAll?'You beat Code Bot Quest!':`Stage ${lv.s+1} complete!`,stars,body:body+`<p>${esc(st.name)}: ${got} of 15 stars collected.</p>${lastAll?'<p>You used sequences, loops, nested loops and switches, the same big ideas real programmers use every day.</p>':`<p>Next up: <b>${esc(STAGES[lv.s+1].name)}</b>. ${esc(STAGES[lv.s+1].blurb)}</p>`}`,
+      fact:lv.fact,primary:lastAll?['Pick a level to replay',()=>openSheet()]:[`Start Stage ${lv.s+2}`,()=>goLevel(i+1)],alt:lastAll?null:['Replay this level',()=>goLevel(i)]});return}
+  showOv({art:botSVG(col(isTeam()?0:rows[rows.length-1].i)),title:'Level complete!',stars,body,fact:lv.fact,primary:['Next level',()=>goLevel(i+1)],alt:['Replay this level',()=>goLevel(i)]});
+}
+const trophy=c=>`<svg viewBox="0 0 120 112" aria-hidden="true"><path d="M30 26H15c0 18 8 28 19 30M90 26h15c0 18-8 28-19 30" fill="none" stroke="#c99a00" stroke-width="7" stroke-linecap="round"/><path d="M28 14h64v26c0 21-14 37-32 37S28 61 28 40z" fill="#ffcf3f"/><path d="M60 14h32v26c0 21-14 37-32 37z" fill="#f2b900"/><circle cx="60" cy="40" r="11" fill="${c}"/><rect x="52" y="76" width="16" height="14" fill="#c99a00"/><rect x="34" y="90" width="52" height="14" rx="5" fill="#a87f00"/></svg>`;
+function nextTurn(){S.turn++;prog=[];cursor=[];bugPath='';fails=0;save();renderAll();toast(`${curP().name}, build your program!`)}
+function goLevel(i){S.lvl=Math.max(0,Math.min(i,LEVELS.length-1));S.turn=0;S.res=[];prog=[];cursor=[];bugPath='';fails=0;save();renderAll();intro()}
+function intro(){const lv=LEVELS[S.lvl];
+  if(lv.loopIntro&&!S.intro.loop){S.intro.loop=1;save();showOv({title:'New block: Repeat',body:`<p>A Repeat runs the blocks inside it again and again. Programmers call this a <b>loop</b>.</p><div class="demo"><div class="loop"><div class="lh">${IC.loop}Repeat <b class="ct">3×</b></div><div class="lb"><span class="blk bF">${IC.F}Forward</span></div></div></div><p>That does the same thing as Forward, Forward, Forward, but uses only 2 blocks.</p><p>Tap Repeat, add blocks inside it, then tap <b>Done with Repeat</b>.</p>`,primary:['Let\'s loop!',()=>{}]})}
+  else if(lv.switchIntro&&!S.intro.sw){S.intro.sw=1;save();showOv({title:'Switches and gates',body:`<div class="demo"><svg width="64" height="64" viewBox="0 0 100 100">${swSVG(SWC.a).replace(/<\/?svg[^>]*>/g,'')}</svg><svg width="64" height="64" viewBox="0 0 100 100">${gateSVG(SWC.a).replace(/<\/?svg[^>]*>/g,'')}</svg></div><p>A gate blocks the way until your robot rolls over the switch with the <b>same color</b>. Then it opens and stays open.</p><p>Real computer chips are full of tiny switches too.</p>`,primary:['Got it!',()=>{}]})}
+}
+
+/* ---------- main render ---------- */
+function renderScores(){
+  if(isTeam()){$('scores').innerHTML=`<div class="sc on">${botSVG(col(0)).replace('<svg','<svg class="mb"')}<span>Team ${esc(S.players.map(p=>p.name).join(' & '))}</span><span class="st">★ ${S.team}</span></div>`;return}
+  $('scores').innerHTML=S.players.map((p,i)=>`<div class="sc${i===S.turn?' on':''}">${botSVG(col(i)).replace('<svg','<svg class="mb"')}<span>${esc(p.name)}</span><span class="st">★ ${S.scores[i]||0}</span></div>`).join('')}
+function renderAll(){
+  const lv=LEVELS[S.lvl],n=LEVELS.filter((l,j)=>l.s===lv.s&&j<=S.lvl).length;
+  $('stg').textContent=`Stage ${lv.s+1}: ${STAGES[lv.s].name}, level ${n} of 5`;$('stg').style.color=STAGES[lv.s].color;
+  $('lvlTitle').textContent=lv.name;$('tip').textContent=lv.tip;
+  $('turnLbl').textContent=isTeam()?'Your program':`${curP().name}'s program`;$('turnLbl').style.color=col(isTeam()?0:S.turn);
+  $('skipBtn').textContent=isTeam()?'Skip this level':`Skip ${curP().name}'s turn`;
+  renderScores();renderBoard();renderProg();
+}
+$('skipBtn').addEventListener('click',()=>{if(running)return;showOv({title:'Skip this one?',body:'<p>You won\'t get stars for this level, but you can come back to it later.</p>',primary:['Keep trying',()=>{}],alt:['Skip it',skip]})});
+function skip(){fails=0;if(isTeam()){levelDone([{i:0,st:0,b:null}]);return}
+  S.res[S.turn]={st:0,b:null};save();if(S.turn<S.players.length-1){nextTurn();return}levelDone(S.res.map((r,i)=>({i,st:r?r.st:0,b:r?r.b:null})))}
+
+/* ---------- setup sheet ---------- */
+function renderSheet(){
+  $('plist').innerHTML=S.players.map((p,i)=>`<div class="pr"><button class="cbtn" data-c="${i}" aria-label="Change ${esc(p.name)}'s robot color">${botSVG(col(i))}</button><input id="pn${i}" data-i="${i}" value="${esc(p.name)}" maxlength="14" aria-label="Player ${i+1} name" autocomplete="off"><button class="del" data-d="${i}" aria-label="Remove player ${i+1}"${S.players.length<2?' hidden':''}>✕</button></div>`).join('');
+  $('addP').hidden=S.players.length>=MAXP;
+  $('mChal').setAttribute('aria-pressed',S.mode==='challenge');$('mTeam').setAttribute('aria-pressed',S.mode==='team');
+  $('modeNote').textContent=S.mode==='team'?'Build one program together and share the stars.':'Everyone solves the same board on their own. Fewest blocks wins the level.';
+  $('spdN').setAttribute('aria-pressed',!S.fast);$('spdF').setAttribute('aria-pressed',S.fast);
+  $('stageList').innerHTML=STAGES.map((st,si)=>{const ids=LEVELS.map((l,j)=>l.s===si?j:-1).filter(j=>j>=0),got=ids.reduce((a,j)=>a+(S.best[j]||0),0);
+    return`<div class="stage" style="--sc:${st.color}"><div class="sh"><b>Stage ${si+1}: ${esc(st.name)}</b><span>★ ${got} of 15</span></div><p>${esc(st.blurb)}</p><div class="lvls">${ids.map((j,k)=>`<button class="lv${j===S.lvl?' cur':''}" data-l="${j}"${j>S.unlocked?' disabled':''} aria-label="Level ${si+1}-${k+1}: ${esc(LEVELS[j].name)}">${si+1}-${k+1}<small>${'★'.repeat(S.best[j]||0)||(j>S.unlocked?'locked':'')}</small></button>`).join('')}</div></div>`}).join('');
+}
+let sheetSnap='';
+function openSheet(){sheetSnap=JSON.stringify([S.players.length,S.mode]);renderSheet();$('sheet').hidden=false}
+function closeSheet(){$('sheet').hidden=true;S.players.forEach(p=>{p.name=(p.name||'').trim()||'Coder'});
+  S.scores=S.players.map((_,i)=>S.scores[i]||0);
+  if(sheetSnap!==JSON.stringify([S.players.length,S.mode])){S.turn=0;S.res=[];prog=[];cursor=[]}
+  if(S.turn>=S.players.length)S.turn=0;save();renderAll()}
+$('menuBtn').addEventListener('click',()=>{if(!running)openSheet()});
+$('shClose').addEventListener('click',closeSheet);
+$('plist').addEventListener('input',e=>{const i=e.target.dataset.i;if(i!=null){S.players[+i].name=e.target.value;save()}});
+$('plist').addEventListener('click',e=>{const c=e.target.closest('[data-c]'),d=e.target.closest('[data-d]');
+  if(c){const p=S.players[+c.dataset.c];p.c=(p.c+1)%COLORS.length;renderSheet()}
+  if(d&&S.players.length>1){S.players.splice(+d.dataset.d,1);S.scores.splice(+d.dataset.d,1);renderSheet()}});
+$('addP').addEventListener('click',()=>{if(S.players.length>=MAXP)return;const used=S.players.map(p=>p.c);S.players.push({name:`Player ${S.players.length+1}`,c:[0,1,2,3,4].find(c=>!used.includes(c))??0});S.scores.push(0);renderSheet();const ins=$('plist').querySelectorAll('input');ins[ins.length-1].select()});
+$('modeSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(b){S.mode=b.dataset.m;renderSheet()}});
+$('spdSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(b){S.fast=b.dataset.s==='1';renderSheet();save()}});
+$('stageList').addEventListener('click',e=>{const b=e.target.closest('[data-l]');if(b&&!b.disabled){closeSheet();goLevel(+b.dataset.l)}});
+$('resetBtn').addEventListener('click',()=>{S.unlocked=0;S.best=[];S.scores=S.players.map(()=>0);S.team=0;S.intro={};closeSheet();goLevel(0)});
+const sndUI=()=>{$('sndBtn').textContent=S.sound?'Sound on':'Sound off';$('sndBtn').setAttribute('aria-pressed',S.sound)};
+$('sndBtn').addEventListener('click',()=>{S.sound=!S.sound;sndUI();save();if(S.sound){ac();SFX.add()}});
+document.addEventListener('pointerdown',()=>ac(),{once:true});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!$('sheet').hidden)closeSheet()}});
+
+/* ---------- boot ---------- */
+function start(data){
+  let saved=null;try{saved=data&&data.S?data.S:JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){}
+  if(saved&&Array.isArray(saved.players)&&saved.players.length)Object.assign(S,saved);
+  S.lvl=Math.max(0,Math.min(S.lvl|0,LEVELS.length-1));S.intro=S.intro||{};S.best=S.best||[];S.scores=S.players.map((_,i)=>(S.scores||[])[i]||0);
+  if(data&&Array.isArray(data.prog)){prog=data.prog;cursor=data.cursor||[]}
+  else if(!saved){prog=[{t:'F'},{t:'F'}]}
+  sndUI();renderAll();
+  if(!saved&&!(data&&data.prog))setTimeout(()=>toast('Two blocks are already in. Add one more and press Run!'),600);
+}
+window.claude?.hot?.snapshot?.(()=>({S,prog,cursor}));
+window.claude?.hot?.ready?window.claude.hot.ready(start):start(window.claude?.hot?.data??{});
+}
+
+/* ---------- Memory Match: coding words and computer history ---------- */
+(function(){
+  const PAIRS=[{"a": {"pic": "⬆️", "text": "Forward"}, "b": {"pic": "⬆️", "text": "Moves one square ahead"}, "title": "Forward", "sub": "Moves one square ahead", "fact": "Forward moves the robot one square the way it is facing. Count the squares before you add them!", "tag": "Code"}, {"a": {"pic": "↩️", "text": "Turn left"}, "b": {"pic": "↩️", "text": "Spins to the robot's own left"}, "title": "Turn left", "sub": "Spins to the robot's own left", "fact": "A turn happens in place: the robot doesn't move a square. Left means the robot's left, so imagine sitting in its seat.", "tag": "Code"}, {"a": {"pic": "↪️", "text": "Turn right"}, "b": {"pic": "↪️", "text": "Spins to the robot's own right"}, "title": "Turn right", "sub": "Spins to the robot's own right", "fact": "Turn right twice and the robot faces the other way.", "tag": "Code"}, {"a": {"pic": "🔁", "text": "Repeat"}, "b": {"pic": "🔁", "text": "Does the same steps again"}, "title": "Repeat", "sub": "Does the same steps again", "fact": "A Repeat block (a loop) saves you from adding the same blocks over and over.", "tag": "Code"}, {"a": {"pic": "🪆", "text": "Loop in a loop"}, "b": {"pic": "🪆", "text": "A repeat inside a repeat"}, "title": "Loop in a loop", "sub": "A repeat inside a repeat", "fact": "Programmers call this a nested loop. It can draw a whole square or staircase with just a few blocks.", "tag": "Code"}, {"a": {"pic": "📜", "text": "Program"}, "b": {"pic": "📜", "text": "A list of steps for a computer"}, "title": "Program", "sub": "A list of steps for a computer", "fact": "A program is just instructions in order. The computer does exactly what it says, even when it's wrong!", "tag": "Code"}, {"a": {"pic": "🧠", "text": "Algorithm"}, "b": {"pic": "🧠", "text": "A plan to solve a problem"}, "title": "Algorithm", "sub": "A plan to solve a problem", "fact": "A recipe is an algorithm too: steps in order that always get the job done.", "tag": "Code"}, {"a": {"pic": "🐞", "text": "Bug"}, "b": {"pic": "🐞", "text": "A mistake in a program"}, "title": "Bug", "sub": "A mistake in a program", "fact": "In 1947, engineers found a real moth stuck inside the Harvard Mark II computer and taped it in their logbook.", "tag": "Code"}, {"a": {"pic": "🔍", "text": "Debug"}, "b": {"pic": "🔍", "text": "Find and fix the mistakes"}, "title": "Debug", "sub": "Find and fix the mistakes", "fact": "Good coders test, watch what goes wrong, change one thing and test again.", "tag": "Code"}, {"a": {"pic": "💡", "text": "Binary"}, "b": {"pic": "💡", "text": "Counting with only 1s and 0s"}, "title": "Binary", "sub": "Counting with only 1s and 0s", "fact": "Computers store everything as 1s and 0s, like tiny light switches that are on or off.", "tag": "Code"}, {"a": {"pic": "0️⃣", "text": "Bit"}, "b": {"pic": "0️⃣", "text": "A single 1 or 0"}, "title": "Bit", "sub": "A single 1 or 0", "fact": "Bit is short for binary digit.", "tag": "Code"}, {"a": {"pic": "🔢", "text": "Byte"}, "b": {"pic": "🔢", "text": "8 bits together"}, "title": "Byte", "sub": "8 bits together", "fact": "One byte can hold a single letter, like A.", "tag": "Code"}, {"a": {"pic": "🎚️", "text": "Switch"}, "b": {"pic": "🎚️", "text": "Opens a gate when you roll over it"}, "title": "Switch", "sub": "Opens a gate when you roll over it", "fact": "In Code Bot Quest, roll over a switch to open the gate that matches it.", "tag": "Code"}, {"a": {"pic": "🤖", "text": "Robot"}, "b": {"pic": "🤖", "text": "From a Czech word for hard work"}, "title": "Robot", "sub": "From a Czech word for hard work", "fact": "The word robot comes from a 1920 play called R.U.R. It comes from robota, which means hard, forced work.", "tag": "History"}, {"a": {"pic": "🚀", "text": "Mars rover"}, "b": {"pic": "🚀", "text": "Drives by commands sent by radio"}, "title": "Mars rover", "sub": "Drives by commands sent by radio", "fact": "Radio signals take minutes to reach Mars, so engineers send a list of commands, just like your program.", "tag": "History"}, {"a": {"pic": "👩‍💻", "text": "Ada Lovelace"}, "b": {"pic": "👩‍💻", "text": "Wrote an early program in 1843"}, "title": "Ada Lovelace", "sub": "Wrote an early program in 1843", "fact": "Ada Lovelace wrote what many call the first computer program, for a machine that was never even finished.", "tag": "History"}, {"a": {"pic": "🖥️", "text": "ENIAC"}, "b": {"pic": "🖥️", "text": "A 30-ton computer from 1945"}, "title": "ENIAC", "sub": "A 30-ton computer from 1945", "fact": "ENIAC, one of the first electronic computers, filled a whole room.", "tag": "History"}, {"a": {"pic": "🖱️", "text": "First mouse"}, "b": {"pic": "🖱️", "text": "Had a wooden shell"}, "title": "First mouse", "sub": "Had a wooden shell", "fact": "The very first computer mouse was built in the 1960s, and its shell was made of wood.", "tag": "History"}];
+  const b=document.getElementById('mmBtn');if(!b||!window.MemoryMatch)return;
+  b.addEventListener('click',()=>MemoryMatch.open({game:'Code Bot Quest',key:'codebot',pairs:PAIRS,picsOption:true,hardLabel:'Word + meaning',
+    rules:['Flip two cards. A coding <b>word</b> matches what it <b>means</b>.'],backLabel:'Back to coding',
+    theme:{bg:'#13402a',back:'#0d2e1e',backEdge:'#071a10',acc:'#ffcf3f',accInk:'#2a2100',accEdge:'#b98a22',factbg:'#fff6d6',font:"'Lilita One','Baloo 2',system-ui,sans-serif"}}));
+})();
+</script>
+</body>
+</html>

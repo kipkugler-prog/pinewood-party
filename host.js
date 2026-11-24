@@ -221,6 +221,9 @@ function renderLobby() {
     $$('select', card).forEach(s => { opts[s.dataset.k] = isNaN(+s.value) ? s.value : +s.value; });
     startGame(id, opts);
   };
+  // a link like tv.html?game=memory (from the Game Closet) points at one game
+  const want = new URLSearchParams(location.search).get('game');
+  if (want && /^[a-z]+$/.test(want)) { const c = $(`.gcard[data-g="${want}"]`); if (c) c.classList.add('want'); }
   renderLobbyParts();
   fitURL();
 }

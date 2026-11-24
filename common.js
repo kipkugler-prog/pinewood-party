@@ -104,7 +104,7 @@ export function buildContent(raw, note = '') {
   [...new Set(C.trivia.map(t => t.cat))].forEach((id, i) => { if (!known.has(id)) { C.categories.push({ id, name: id, short: id, color: spare[i % spare.length], t: '#fff' }); known.add(id); } });
   if (!C.quips.length) C.quips = DEFAULT_QUIPS.slice();
   if (!C.doodles.length) C.doodles = DEFAULT_DOODLES.slice();
-  if (!C.babies.length) C.babies = DEFAULT_BABIES.map(([person, f]) => ({ person, img: `img/baby/${f}.jpg` }));
+  if (!C.babies.length) C.babies = DEFAULT_BABIES.map(([person, f]) => ({ person, img: `${f}.jpg` }));
   return C;
 }
 
@@ -124,7 +124,7 @@ export const DEFAULT_QUIPS = [
   'A terrible flavor of pie', 'The real reason Grandpa disappears after dinner', 'A family vacation that should never happen again',
   'The worst gift to give your sister', 'What the dog would say about this family', 'A bad slogan for Idaho potatoes'
 ];
-// baby pictures for Memory Match when the Babies tab is empty or missing (the files live in img/baby/)
+// baby pictures for Memory Match when the Babies tab is empty or missing (the files sit in the site's top folder)
 export const DEFAULT_BABIES = [
   ['Grandma Sally', 'grandma-sally'], ['Grandpa Don', 'grandpa-don'], ['Jen', 'jen'], ['Carl', 'carl'], ['Jill', 'jill'], ['Chris', 'chris'],
   ['Joy', 'joy'], ['Kip', 'kip'], ['Erin', 'erin'], ['Isaac', 'isaac'], ['Josh', 'josh'], ['Aubrey', 'aubrey'], ['Colton', 'colton'],

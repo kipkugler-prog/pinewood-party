@@ -368,3 +368,4 @@ body.tv[data-game="lobby"] #cupbox{background:rgba(13,36,27,.72)}
 @media (max-width:900px){.tv .gcard.classic{flex-wrap:wrap}}
 .tv .gcard[data-g="memory"] .sets label:first-child{flex:0 0 3.7em}
 .tv .gcard[data-g="memory"] .sets label:last-child select{padding-right:1.3em;background-position:right .4em center}
+.tv .gcard.want{box-shadow:0 0 0 .28em var(--gold),0 12px 26px -16px rgba(0,0,0,.75)}

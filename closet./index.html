@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Game Closet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;700;800&family=Nunito:wght@400;600;700;800&family=Baloo+2:wght@800&family=Caveat:wght@700&family=Bungee&family=Fredoka:wght@600;700&family=Lilita+One&family=Patrick+Hand&display=swap">
+<style>
+/* VOICE a family's own game closet: warm, a little playful, easy to scan from the couch or a phone
+   IDEA the hall closet where the board games live: painted wall, wooden shelves, every game a box you pull out
+   PICTURE the shelves themselves, filled with box lids drawn in each game's own colours and lettering
+   COLOUR dusty-blue painted wall, honey wood shelves with label-maker tape; each box keeps its game's palette
+   TYPE Rubik (closet labels and headings) + Nunito (text); each lid uses its own game's display font
+   LAYOUT title and "who's playing" filter, then three shelves of boxes, then a shelf of study books; boxes go two-up on a phone */
+:root{color-scheme:light dark;--wall:light-dark(#d5e3ec,#151d25);--wall2:light-dark(#c7d8e3,#111820);--ink:light-dark(#1d2633,#eef3f8);--soft:light-dark(#4f5d6e,#a9b6c4);--card:light-dark(#fffdf8,#1f2833);--line:light-dark(#e3dccd,#334152);--wood:light-dark(#c48a4f,#7a5232);--wood2:light-dark(#a06a36,#5c3c22);--wood3:light-dark(#e0ae73,#946640);--tape:#1c1c1e;--focus:#2b6cff}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--wall);background-image:repeating-linear-gradient(90deg,transparent 0 118px,var(--wall2) 118px 120px);color:var(--ink);font:16px/1.55 Nunito,system-ui,sans-serif;overflow-x:clip}
+h1,h2,h3{margin:0;line-height:1.08}
+a{color:inherit}
+.wrap{max-width:1240px;margin:0 auto;padding:0 max(18px,4vw)}
+header.wrap{padding-top:clamp(30px,4vw,54px);padding-bottom:6px}
+.top{display:flex;flex-wrap:wrap;gap:16px 28px;align-items:flex-end;justify-content:space-between}
+h1{font:800 clamp(34px,4.6vw,52px)/1.02 Rubik,sans-serif;letter-spacing:-.02em;text-wrap:balance}
+.sub{margin:8px 0 0;color:var(--soft);font-size:17px;max-width:40em}
+.who{display:flex;flex-direction:column;gap:6px}
+.who b{font:700 14px Rubik,sans-serif;color:var(--soft)}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{font:700 15px Nunito,sans-serif;color:var(--ink);background:var(--card);border:2px solid var(--line);border-radius:999px;padding:8px 15px;min-height:44px;cursor:pointer}
+.seg button[aria-pressed=true]{background:var(--ink);border-color:var(--ink);color:var(--wall)}
+button:focus-visible,a:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+.resume{display:inline-flex;align-items:center;gap:10px;margin-top:16px;background:var(--card);border:2px solid var(--line);border-radius:14px;padding:8px 8px 8px 14px;text-decoration:none;font-weight:700}
+.resume span{color:var(--soft);font-weight:600}
+.resume i{font-style:normal;background:var(--ink);color:var(--wall);border-radius:10px;padding:6px 12px;font:700 15px Rubik,sans-serif}
+.shelf{margin-top:clamp(26px,3.4vw,40px)}
+.row{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:clamp(14px,2vw,26px);align-items:end;padding:0 clamp(6px,1.2vw,16px)}
+.plank{position:relative;height:22px;margin-top:-2px;background:linear-gradient(var(--wood3),var(--wood) 30%,var(--wood2));border-radius:3px;box-shadow:0 10px 18px -8px rgba(0,0,0,.45)}
+.plank::before,.plank::after{content:"";position:absolute;top:22px;width:14px;height:26px;background:linear-gradient(90deg,var(--wood2),var(--wood));clip-path:polygon(0 0,100% 0,100% 30%,30% 100%,0 100%)}
+.plank::before{left:8%}.plank::after{right:8%;transform:scaleX(-1)}
+.label{position:absolute;left:50%;top:3px;transform:translateX(-50%);background:var(--tape);color:#f4f4f4;font:700 12px/16px Rubik,sans-serif;letter-spacing:.08em;padding:0 10px;border-radius:2px;white-space:nowrap;box-shadow:inset 0 1px 0 rgba(255,255,255,.12)}
+.box{display:flex;flex-direction:column;text-decoration:none;color:var(--ink);background:var(--card);border-radius:10px 10px 4px 4px;box-shadow:0 1px 0 rgba(0,0,0,.08),0 14px 24px -14px rgba(0,0,0,.5);transition:transform .18s,box-shadow .18s,opacity .25s,filter .25s;position:relative}
+.box:hover{transform:translateY(-7px);box-shadow:0 1px 0 rgba(0,0,0,.08),0 24px 30px -16px rgba(0,0,0,.55)}
+.box.dim{opacity:.38;filter:grayscale(.75)}
+.lid{border-radius:10px 10px 0 0;overflow:hidden;border-bottom:6px solid rgba(0,0,0,.22)}
+.art{position:relative;aspect-ratio:16/9}
+.art svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+.lid h3{padding:9px 14px 10px;font-size:calc(clamp(20px,1.9vw,25px) * var(--k,1));line-height:1.05;text-wrap:balance}
+.info{padding:12px 14px 14px;display:flex;flex-direction:column;gap:8px;flex:1}
+.info p{margin:0;font-size:15px;line-height:1.45}
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:auto}
+.chips span{font:700 12.5px Nunito,sans-serif;background:light-dark(#f1ece2,#2a3542);border-radius:999px;padding:3px 9px;white-space:nowrap}
+.chips span.live{background:light-dark(#dff3e6,#183b28);color:light-dark(#1d6b3f,#8fe0ad)}
+.play{display:flex;justify-content:space-between;align-items:center;font:700 15px Rubik,sans-serif;border-top:2px dashed var(--line);padding-top:9px;margin-top:2px}
+.play i{font-style:normal;background:var(--ink);color:var(--card);border-radius:9px;padding:5px 12px}
+.ribbon{position:absolute;top:10px;right:-6px;background:#ff5b4f;color:#fff;font:700 12px Rubik,sans-serif;padding:3px 10px;border-radius:4px 0 0 4px;box-shadow:0 2px 4px rgba(0,0,0,.25);z-index:2}
+.ribbon::after{content:"";position:absolute;right:0;bottom:-6px;border:3px solid #a8322a;border-right-color:transparent;border-bottom-color:transparent}
+.empty{border:3px dashed light-dark(#9fb3c2,#3f5266);border-radius:10px;min-height:260px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:20px;color:var(--soft);gap:6px}
+.empty b{font:800 18px Rubik,sans-serif;color:var(--ink)}
+.empty p{margin:0;font-size:14.5px;max-width:18em}
+.books{display:flex;gap:10px;align-items:flex-end;padding:0 clamp(10px,2vw,30px);flex-wrap:wrap}
+.spine{display:flex;align-items:center;justify-content:center;writing-mode:vertical-rl;transform:rotate(180deg);height:210px;width:66px;border-radius:4px;text-decoration:none;font:800 16px Rubik,sans-serif;letter-spacing:.02em;padding:14px 0;box-shadow:inset -6px 0 0 rgba(0,0,0,.15),inset 6px 0 0 rgba(255,255,255,.15),0 10px 16px -10px rgba(0,0,0,.5);transition:transform .18s}
+.spine:hover{transform:rotate(180deg) translateY(8px)}
+.spine small{font:700 11px Nunito,sans-serif;opacity:.8;margin-top:8px}
+.bnote{flex:1;min-width:220px;align-self:center;padding:10px 4px 14px 10px;color:var(--soft);font-size:15px}
+.bnote b{color:var(--ink)}
+footer.wrap{padding-top:68px;padding-bottom:40px;color:var(--soft);font-size:14px}
+.count{font:700 14px Rubik,sans-serif;color:var(--soft);margin:10px 0 0}
+@media(max-width:600px){
+  .row{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:0 4px}
+  .lid h3{padding:7px 9px 8px;font-size:calc(16px * var(--k,1))}
+  .info p{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+  .info{padding:9px 10px 11px;gap:6px}.info p{font-size:13.5px}
+  .chips span{font-size:11.5px;padding:2px 7px}
+  .play{font-size:14px}.play i{padding:4px 9px}
+  .empty{min-height:200px;padding:12px}
+  .spine{height:170px;width:56px;font-size:14px}
+  .label{font-size:11px}
+}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header class="wrap">
+  <div class="top">
+    <div><h1>The Game Closet</h1><p class="sub">Every game we've made, on one set of shelves. Pick a box to play; the strip at the top of each game brings you back here.</p></div>
+    <div class="who" role="group" aria-label="Who's playing?"><b>Who's playing?</b><div class="seg" id="who"></div></div>
+  </div>
+  <div id="resume"></div>
+  <p class="count" id="count" aria-live="polite"></p>
+</header>
+<main class="wrap" id="shelves"></main>
+<footer class="wrap">No account needed. Every game works on the device you open it on and remembers progress in that browser. Games marked <b>Phones join with a code</b> show a QR code on the TV so everyone can play from their own phone, and every Memory Match can be played on phones too.</footer>
+<script>
+{
+const GAMES = [
+  {id:'pinewood-party', band:'#14301f', shelf:'trivia', name:'Pinewood Party', font:'Fredoka', ink:'#fff', url:'https://kipkugler-prog.github.io/pinewood-party/tv.html',
+   line:'The phone party game: put the TV screen up and everyone joins on their own phone with the room code. Trivia Showdown, Doodle Dash, Family Fibs, Memory Match and more.',
+   chips:['Phones join, no account','8 party games','Opens its own site'], who:['group']},
+  {id:'baby-memory', band:'#25a06a', shelf:'trivia', name:'Baby Memory Match', font:'Fredoka', ink:'#fff', url:'https://kipkugler-prog.github.io/pinewood-party/tv.html?game=memory',
+   line:"Baby pictures of the whole family, face down on the TV. Take turns flipping two from your phone to find the pairs, then everyone guesses whose baby it was.",
+   chips:['21 family baby pictures','Phones join, no account','Opens its own site'], who:['group','two']},
+  {id:'big-world-trivia', band:'#1f6fc0', shelf:'trivia', name:'Big World Trivia', font:"'Baloo 2'", ink:'#fff',
+   line:'Spin the wheel for questions on animals, space and faraway places. Place questions end with a trip on the world map.',
+   chips:['302 questions','Memory Match','Up to 10 players','3 levels each'], phones:true, who:['group','two','solo']},
+  {id:'two-sticks-trivia', band:'#3b4b1c', shelf:'trivia', name:'Two Sticks Trivia', font:"'Baloo 2'", ink:'#fff', url:'../two-sticks/two-sticks/',
+   line:'Bible, Book of Mormon and Restoration questions from the study books, each with its scripture reference and a map of Bible lands. Or play Memory Match: pair each person with their story.',
+   chips:['545 questions','Memory Match','Up to 10 players','3 levels each'], phones:true, who:['group','two','solo']},
+  {id:'pinewood-trivia', band:'#245839', shelf:'trivia', name:'Pinewood Trivia', font:'Caveat', ink:'#fff', size:1.25,
+   line:"Questions from Mom's binder of letters, Grandma's birthday calendar and the July 2021 family photos, with story time after each answer.",
+   chips:['Up to 18 players','3 levels each','Memory Match'], who:['group','two']},
+  {id:'memory-trivia', band:'#24060f', shelf:'trivia', name:'Kugler Memory Trivia', font:'Bungee', ink:'#fff3d9', size:.82,
+   line:'A TV game-show board for teams: the binder, survey says, who said it, two truths, picture flash cards and a final round.',
+   chips:['Teams','Best on a TV','Memory Match: who said it?'], who:['group','two']},
+  {id:'learn-and-play', band:'#ffcd3c', shelf:'learn', name:'Learn & Play', font:'Fredoka', ink:'#1d1a24',
+   line:'Learn a principle in five minutes, then play a game show built on it. Play on your own, or against up to five friends on one screen: lightning, bet it, act it out and more. Ends with a mission for the week.',
+   chips:['1 to 6 players','12 or 22 min','Brain breaks','Memory Match'], who:['solo','two','group']},
+  {id:'mind-quest', band:'#ffcd3c', shelf:'learn', name:'Mind Quest', font:'Fredoka', ink:'#1d1a24',
+   line:'A solo quest made for the phone: learn each principle, then answer from memory. Combos, bets, daily quests, a boss at the end of every world, and a coach you can dress up.',
+   chips:['1 player','Phone-first','Bosses','Memory Match'], who:['solo','two']},
+  {id:'code-bot-quest', band:'#13402a', shelf:'learn', name:'Code Bot Quest', font:"'Lilita One'", ink:'#f6f2e4',
+   line:'Snap code blocks together to drive a little rover across a circuit board, collecting chips on the way to the charging pad.',
+   chips:['Take turns or team up','Stages that build','Memory Match'], phones:true, who:['solo','two']},
+  {id:'dots-and-boxes', band:'#fff', shelf:'quick', name:'Dots & Boxes', font:"'Patrick Hand'", ink:'#1b2230', size:1.15,
+   line:'The kitchen-table pencil game: join dots, close boxes, take another turn. Board sizes from 3×3 to 8×8.',
+   chips:['2 players or vs computer','Easy, Medium, Hard','5 board sizes'], phones:true, who:['two','solo']},
+  {id:'deutsch-doodles', band:'#ffcd38', shelf:'learn', name:'Deutsch Doodles', font:'Lexend', ink:'#1d2331',
+   line:'Learn German words with pictures, der, die and das colors, and quick review rounds. Now with Memory Match: pair each German word with its English meaning.',
+   chips:['Learn German','Memory Match','Easy-read font'], phones:true, who:['solo','two']}
+];
+const SHELVES = [['trivia','Family game nights'],['learn','Learn something'],['quick','Quick games']];
+const BOOKS = [
+  {name:'PsychToons Study Book', url:'https://claude.ai/artifact/CDQZBRzJjmJ3REd8vDDjPA', bg:'#ffcd3c', ink:'#1d1a24', note:'Mind Quest, Learn & Play'},
+  {name:'Stick of Joseph', url:'https://claude.ai/artifact/KkixGvMhWoGGQDvcW6B3WE', bg:'#5a3a22', ink:'#f2d9a6', note:'Two Sticks Trivia'},
+  {name:"Heaven's Code", url:'https://claude.ai/artifact/ReyJnNV2Ji1b7RnZqikC1D', bg:'#24406b', ink:'#f2c14e', note:'Two Sticks Trivia'},
+  {name:'The Kugler Family', url:'https://claude.ai/artifact/4ACnsU23ekV5Qc7L5d7RMA', bg:'#2e4a3b', ink:'#fbf7ef', note:'Pinewood Party, Memory Match'}
+];
+const WHO = [['all','Everyone'],['group','The whole group'],['two','Two of us'],['solo','Just me']];
+const $ = s => document.querySelector(s);
+let st = {who:'all', last:null, n:{}};
+try { Object.assign(st, JSON.parse(localStorage.getItem('game-closet') || '{}')); } catch (e) {}
+const save = () => { try { localStorage.setItem('game-closet', JSON.stringify(st)); } catch (e) {} };
+
+/* ---------- box lids, drawn in each game's own colours ---------- */
+const V = 'viewBox="0 0 320 200" preserveAspectRatio="xMidYMid slice" aria-hidden="true"';
+function mascot(x, y, s) {
+  return `<g transform="translate(${x} ${y}) scale(${s})"><g fill="#ff8fb1" stroke="#d9567d" stroke-width="3"><circle cx="38" cy="42" r="22"/><circle cx="62" cy="32" r="24"/><circle cx="86" cy="46" r="21"/><circle cx="30" cy="68" r="20"/><circle cx="90" cy="70" r="20"/><ellipse cx="60" cy="72" rx="38" ry="32"/></g><g fill="#ff8fb1"><ellipse cx="60" cy="66" rx="34" ry="28"/><circle cx="62" cy="38" r="20"/></g><path d="M58 18 Q52 34 62 44 M34 40 Q46 44 44 54 M88 40 Q78 46 82 54" fill="none" stroke="#d9567d" stroke-width="3" stroke-linecap="round"/><circle cx="42" cy="58" r="9" fill="#fff"/><circle cx="78" cy="58" r="9" fill="#fff"/><circle cx="44" cy="59" r="4.5" fill="#1d1a24"/><circle cx="80" cy="59" r="4.5" fill="#1d1a24"/><path d="M44 74 Q60 92 76 74" fill="#1d1a24"/></g>`;
+}
+function wheel(cx, cy, r, cols) {
+  const n = cols.length, a = 2 * Math.PI / n;
+  let s = cols.map((c, i) => { const x1 = cx + r * Math.sin(i * a), y1 = cy - r * Math.cos(i * a), x2 = cx + r * Math.sin((i + 1) * a), y2 = cy - r * Math.cos((i + 1) * a); return `<path d="M${cx} ${cy}L${x1.toFixed(1)} ${y1.toFixed(1)}A${r} ${r} 0 0 1 ${x2.toFixed(1)} ${y2.toFixed(1)}Z" fill="${c}" stroke="#fff" stroke-width="2.5"/>`; }).join('');
+  return `<circle cx="${cx}" cy="${cy + 4}" r="${r + 4}" fill="rgba(0,0,0,.18)"/><circle cx="${cx}" cy="${cy}" r="${r + 4}" fill="#fff"/>${s}<circle cx="${cx}" cy="${cy}" r="${r * .2}" fill="#fff"/><circle cx="${cx}" cy="${cy}" r="${r * .1}" fill="#ffd23f"/><path d="M${cx - 9} ${cy - r - 12}h18l-9 16z" fill="#ffd23f" stroke="#c99a00" stroke-width="2"/>`;
+}
+const LIDS = {
+  'pinewood-party': () => `<svg ${V}><rect width="320" height="200" fill="#1b3d2e"/>${[[30,150],[62,120],[96,160],[280,40]].map(([x,y]) => `<path d="M${x} ${y-34}l-14 20h7l-12 16h9l-12 15h44l-12-15h9l-12-16h7z" fill="#2c5a40"/>`).join('')}<rect x="112" y="26" width="150" height="96" rx="10" fill="#0e1f16" stroke="#f2c94c" stroke-width="4"/><rect x="176" y="122" width="22" height="12" fill="#0e1f16"/><rect x="156" y="134" width="62" height="6" rx="3" fill="#0e1f16"/><text x="166" y="62" text-anchor="middle" font-family="Fredoka, Nunito, sans-serif" font-weight="700" font-size="15" fill="#cfe8d6">ROOM CODE</text><text x="166" y="98" text-anchor="middle" font-family="Fredoka, Nunito, sans-serif" font-weight="700" font-size="34" fill="#f2c94c" letter-spacing="3">PINE</text><rect x="230" y="32" width="26" height="26" rx="3" fill="#fff"/>${[[232,34],[244,34],[232,46],[239,40],[249,50],[244,44]].map(([x,y]) => `<rect x="${x}" y="${y}" width="5" height="5" fill="#0e1f16"/>`).join('')}${[[214,96,-10,'#ff7a59'],[256,104,8,'#5cc8ff'],[288,92,16,'#f2c94c']].map(([x,y,r,c]) => `<g transform="rotate(${r} ${x} ${y})"><rect x="${x-14}" y="${y}" width="28" height="50" rx="6" fill="#fff" stroke="#0e1f16" stroke-width="2.5"/><rect x="${x-10}" y="${y+8}" width="20" height="26" rx="3" fill="${c}"/></g>`).join('')}</svg>`,
+  'big-world-trivia': () => `<svg ${V}><rect width="320" height="200" fill="#2b88e0"/>${[160, 120, 80].map(r => `<circle cx="240" cy="78" r="${r}" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="18"/>`).join('')}<path d="M24 118 Q80 40 150 70" fill="none" stroke="#fff" stroke-width="3" stroke-dasharray="2 9" stroke-linecap="round"/><path d="M150 52c-9 0-15 7-15 15 0 11 15 24 15 24s15-13 15-24c0-8-6-15-15-15z" fill="#ff6b6b" stroke="#fff" stroke-width="3"/><circle cx="150" cy="67" r="5" fill="#fff"/>${wheel(240, 80, 56, ['#ff6b6b', '#ffd23f', '#4cd18a', '#a97bff', '#ff9f43', '#3fc1ff', '#ff7ab6', '#7bd389'])}</svg>`,
+  'two-sticks-trivia': () => `<svg ${V}><rect width="320" height="200" fill="#4d6127"/>${[150, 110, 70, 30].map(r => `<ellipse cx="250" cy="70" rx="${r * 1.3}" ry="${r}" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="10"/>`).join('')}<g transform="rotate(-14 230 80)"><rect x="140" y="54" width="180" height="26" rx="13" fill="#c8955a"/><path d="M150 61h50M210 72h60M160 74h30M270 62h40" stroke="#9a6a3a" stroke-width="2.5" stroke-linecap="round"/></g><g transform="rotate(10 230 90)"><rect x="140" y="80" width="180" height="26" rx="13" fill="#d6a468"/><path d="M152 88h40M200 98h70M250 87h50" stroke="#a7743f" stroke-width="2.5" stroke-linecap="round"/></g><rect x="214" y="58" width="26" height="62" rx="6" fill="#f2c14e" stroke="#b98a22" stroke-width="2.5" transform="rotate(-2 227 89)"/><path d="M60 40l4 10 10 4-10 4-4 10-4-10-10-4 10-4z" fill="#f2c14e"/></svg>`,
+  'baby-memory': () => { const face = (x, y) => `<circle cx="${x}" cy="${y}" r="16" fill="#f8d5bd"/><path d="M${x - 3} ${y - 16}q5 -9 11 -2" fill="none" stroke="#8a5a2b" stroke-width="3" stroke-linecap="round"/><circle cx="${x - 6}" cy="${y - 2}" r="2.2" fill="#2a2a2a"/><circle cx="${x + 6}" cy="${y - 2}" r="2.2" fill="#2a2a2a"/><circle cx="${x - 10}" cy="${y + 5}" r="3" fill="#f4a6a6"/><circle cx="${x + 10}" cy="${y + 5}" r="3" fill="#f4a6a6"/><path d="M${x - 5} ${y + 6}q5 5 10 0" fill="none" stroke="#2a2a2a" stroke-width="2" stroke-linecap="round"/>`;
+    let c = ''; for (let i = 0; i < 8; i++) { const x = 27 + (i % 4) * 70, y = 37 + (i / 4 | 0) * 70, up = i === 1 || i === 6;
+      c += up ? `<rect x="${x - 3}" y="${y - 3}" width="62" height="62" rx="10" fill="#ffd23f"/><rect x="${x}" y="${y}" width="56" height="56" rx="8" fill="#fffdf8"/>${face(x + 28, y + 30)}`
+              : `<rect x="${x}" y="${y}" width="56" height="56" rx="8" fill="#fffdf8"/><rect x="${x + 4}" y="${y + 4}" width="48" height="48" rx="5" fill="url(#bmm)"/><text x="${x + 28}" y="${y + 37}" text-anchor="middle" font-family="Fredoka, Nunito, sans-serif" font-weight="700" font-size="22" fill="#fff">${i + 1}</text>`; }
+    return `<svg ${V}><defs><pattern id="bmm" width="12" height="12" patternUnits="userSpaceOnUse"><rect width="12" height="12" fill="#2fb0a9"/><rect width="6" height="12" fill="rgba(255,255,255,.18)"/><rect width="12" height="6" fill="rgba(255,255,255,.18)"/></pattern></defs><rect width="320" height="200" fill="#1b4a35"/>${c}</svg>`; },
+  'pinewood-trivia': () => `<svg ${V}><defs><pattern id="gg" width="28" height="28" patternUnits="userSpaceOnUse"><rect width="28" height="28" fill="#2f6b47"/><rect width="14" height="28" fill="rgba(255,255,255,.22)"/><rect width="28" height="14" fill="rgba(255,255,255,.22)"/></pattern></defs><rect width="320" height="200" fill="url(#gg)"/><g transform="rotate(5 238 80)"><rect x="176" y="18" width="128" height="122" rx="3" fill="#fff" stroke="rgba(0,0,0,.12)"/><rect x="186" y="28" width="108" height="84" fill="#bfe1f2"/><rect x="186" y="92" width="108" height="20" fill="#8cc56b"/><path d="M206 92v-22l18-14 18 14v22z" fill="#fff5e6"/><path d="M200 72l24-20 24 20" fill="none" stroke="#c0392b" stroke-width="6" stroke-linejoin="round"/><rect x="219" y="78" width="10" height="14" fill="#7a4b2a"/><path d="M268 92l-14 0 14-34 14 34z" fill="#1f5a39"/><rect x="215" y="10" width="46" height="16" fill="rgba(255,240,180,.75)" transform="rotate(-6 238 18)"/></g></svg>`,
+  'memory-trivia': () => { let b = ''; for (let x = 10; x <= 310; x += 20) b += `<circle cx="${x}" cy="9" r="4.5" fill="#ffd36b"/><circle cx="${x}" cy="191" r="4.5" fill="#ffd36b"/>`; for (let y = 29; y <= 171; y += 20) b += `<circle cx="9" cy="${y}" r="4.5" fill="#ffd36b"/><circle cx="311" cy="${y}" r="4.5" fill="#ffd36b"/>`;
+    const t = [100, 200, 300, 200, 400, 600].map((v, i) => `<rect x="${150 + (i % 3) * 52}" y="${28 + (i / 3 | 0) * 44}" width="46" height="38" rx="5" fill="${i === 4 ? '#ffd36b' : '#d8601d'}"/><text x="${173 + (i % 3) * 52}" y="${53 + (i / 3 | 0) * 44}" text-anchor="middle" font-family="Bungee, Rubik, sans-serif" font-size="14" fill="${i === 4 ? '#3a0b18' : '#fff3d9'}">${v}</text>`).join('');
+    return `<svg ${V}><rect width="320" height="200" fill="#3a0b18"/><rect x="22" y="22" width="276" height="156" rx="10" fill="#56172a"/>${b}${t}</svg>`; },
+  'learn-and-play': () => `<img src="hero-learnplay.svg" alt="" style="display:block;width:100%;height:100%;object-fit:cover">`,
+  'mind-quest': () => `<img src="hero-mindquest.svg" alt="" style="display:block;width:100%;height:100%;object-fit:cover">`,
+  'code-bot-quest': () => `<svg ${V}><rect width="320" height="200" fill="#1d6b3f"/><g fill="none" stroke="#e3b04b" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity=".9"><path d="M0 60h70l20 20h60"/><path d="M320 40h-60l-20 20v40"/><path d="M200 200v-40l20-20h100"/><path d="M0 150h40l20-20h50"/></g>${[[70, 60], [150, 80], [240, 100], [110, 130], [220, 140]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="6" fill="#0d2c1b" stroke="#e3b04b" stroke-width="3"/>`).join('')}<rect x="232" y="24" width="56" height="40" rx="4" fill="#111"/>${[0, 1, 2, 3].map(i => `<rect x="${238 + i * 13}" y="18" width="5" height="6" fill="#cfd6dc"/><rect x="${238 + i * 13}" y="64" width="5" height="6" fill="#cfd6dc"/>`).join('')}<rect x="250" y="146" width="56" height="34" rx="8" fill="#27834d" stroke="#7cf05a" stroke-width="3" stroke-dasharray="6 5"/><g transform="translate(150 92)"><rect x="-4" y="30" width="16" height="16" rx="8" fill="#222"/><rect x="40" y="30" width="16" height="16" rx="8" fill="#222"/><rect x="-8" y="2" width="68" height="36" rx="10" fill="#ffcf3f"/><rect x="6" y="10" width="40" height="18" rx="6" fill="#0d2c1b"/><circle cx="18" cy="19" r="4" fill="#7cf05a"/><circle cx="34" cy="19" r="4" fill="#7cf05a"/><path d="M26 2v-12" stroke="#ffcf3f" stroke-width="4" stroke-linecap="round"/><circle cx="26" cy="-13" r="5" fill="#ff7ab6"/></g></svg>`,
+  'deutsch-doodles': () => `<svg viewBox="0 0 320 200" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="320" height="200" fill="#fbf5e8"/><rect x="18" y="26" width="120" height="26" fill="#1b1b1b"/><rect x="18" y="52" width="120" height="26" fill="#dd0000"/><rect x="18" y="78" width="120" height="26" fill="#ffce00"/><text x="230" y="70" text-anchor="middle" font-family="Lexend,sans-serif" font-weight="800" font-size="34" fill="#1d2331">Hallo!</text><text x="230" y="112" text-anchor="middle" font-family="Lexend,sans-serif" font-size="20" fill="#2462d6">der Hund 🐕</text><text x="230" y="140" text-anchor="middle" font-family="Lexend,sans-serif" font-size="20" fill="#cf2d47">die Katze 🐈</text></svg>`,
+  'dots-and-boxes': () => { let g = ''; for (let x = 0; x <= 320; x += 16) g += `<path d="M${x} 0V200" stroke="#dfe7f3" stroke-width="1"/>`; for (let y = 0; y <= 200; y += 16) g += `<path d="M0 ${y}H320" stroke="#dfe7f3" stroke-width="1"/>`;
+    let d = ''; for (let i = 0; i < 5; i++) for (let j = 0; j < 3; j++) d += `<circle cx="${128 + i * 40}" cy="${32 + j * 40}" r="5" fill="#262b35"/>`;
+    return `<svg ${V}><rect width="320" height="200" fill="#fff"/>${g}<path d="M128 32h40v40h-40zM168 32h40" fill="rgba(31,91,216,.12)" stroke="#1f5bd8" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><path d="M208 72h40v40M168 112h40M248 32v40" fill="none" stroke="#d63c2a" stroke-width="5" stroke-linecap="round"/><text x="148" y="62" text-anchor="middle" font-family="Patrick Hand, Nunito, sans-serif" font-size="26" fill="#1f5bd8">B</text>${d}</svg>`; }
+};
+
+/* ---------- render ---------- */
+function boxHTML(g) {
+  const fit = st.who === 'all' || g.who.includes(st.who);
+  return `<a class="box${fit ? '' : ' dim'}" href="${g.url || g.id + '.html'}"${/^https?:/.test(g.url || '') ? ' target="_blank" rel="noopener"' : ''} data-id="${g.id}" aria-label="${g.name}. ${g.line}">${st.last === g.id ? '<span class="ribbon">Last played</span>' : ''}<div class="lid"><div class="art">${LIDS[g.id]()}</div><h3 style="font-family:${g.font},sans-serif;color:${g.ink};background:${g.band};--k:${g.size || 1}">${g.name}</h3></div>
+    <div class="info"><p>${g.line}</p><div class="chips">${g.phones ? '<span class="live" title="Put the game on the TV, then everyone joins from their own phone with a QR code. No account needed.">Phones join with a code</span>' : ''}${g.chips.map(c => `<span>${c}</span>`).join('')}</div><div class="play"><span>${st.n[g.id] ? `Played ${st.n[g.id]} time${st.n[g.id] > 1 ? 's' : ''}` : 'Not played yet'}</span><i>${/^https?:/.test(g.url || '') ? 'Open TV \u2197' : 'Play'}</i></div></div></a>`;
+}
+function render() {
+  $('#who').innerHTML = WHO.map(([k, n]) => `<button data-who="${k}" aria-pressed="${st.who === k}">${n}</button>`).join('');
+  const last = GAMES.find(g => g.id === st.last);
+  $('#resume').innerHTML = last ? `<a class="resume" href="${last.url || last.id + '.html'}"${/^https?:/.test(last.url || '') ? ' target="_blank" rel="noopener"' : ''} data-id="${last.id}"><span>Pick up where you left off:</span> ${last.name} <i>Play</i></a>` : '';
+  const fits = GAMES.filter(g => st.who === 'all' || g.who.includes(st.who)).length;
+  $('#count').textContent = st.who === 'all' ? `${GAMES.length} games on the shelves` : `${fits} of ${GAMES.length} games fit ${WHO.find(w => w[0] === st.who)[1].toLowerCase()}`;
+  $('#shelves').innerHTML = SHELVES.map(([k, label]) => `<section class="shelf" aria-label="${label}"><div class="row">${GAMES.filter(g => g.shelf === k).map(boxHTML).join('')}${k === 'quick' ? '<div class="empty"><b>Room for the next game</b><p>New games we build land on this shelf.</p></div>' : ''}</div><div class="plank"><span class="label">${label.toUpperCase()}</span></div></section>`).join('')
+    + `<section class="shelf" aria-label="Study books"><div class="books">${BOOKS.map(b => `<a class="spine" href="${b.url}" target="_blank" rel="noopener" style="background:${b.bg};color:${b.ink}" title="${b.name}: the study book behind ${b.note}">${b.name}<small>${b.note}</small></a>`).join('')}<p class="bnote"><b>The books behind the games.</b> The study books that the learning and scripture games are built from, and the family book behind the Pinewood Party trivia and baby pictures. They open on their own page.</p></div><div class="plank"><span class="label">STUDY BOOKS</span></div></section>`;
+}
+document.addEventListener('click', e => {
+  const w = e.target.closest('[data-who]');
+  if (w) { st.who = w.dataset.who; save(); render(); return; }
+  const b = e.target.closest('a[data-id]');
+  if (b) { st.last = b.dataset.id; st.n[b.dataset.id] = (st.n[b.dataset.id] || 0) + 1; save(); }
+});
+const hm = location.hash.slice(1), dl = hm.match(/^(lp|mq)-([a-z]+-t\d+(?:-l\d+)?)$/);
+if (dl) { const g = dl[1] === 'lp' ? 'learn-and-play' : 'mind-quest'; st.last = g; st.n[g] = (st.n[g] || 0) + 1; save(); location.replace(g + '.html#' + dl[2]); }
+else render();
+}
+</script>
+</body>
+</html>

@@ -1,7 +1,7 @@
 // Phone / player screen: join with a room code, then answer, draw and vote.
-import { connect } from './net.js?v=20261116';
-import { $, $$, esc, obj, arr, avatar, PCOLORS, LEVELS, INK, PEN, drawStrokes } from './common.js?v=20261116';
-import { GAMES, TROPHY } from './games.js?v=20261116';
+import { connect } from './net.js?v=20261124';
+import { $, $$, esc, obj, arr, avatar, PCOLORS, LEVELS, INK, PEN, drawStrokes } from './common.js?v=20261124';
+import { GAMES, TROPHY } from './games.js?v=20261124';
 
 const KEY = 'pp-join';
 let net, code = '', me = '', S = null, P = {}, mine = null, mineKey = '', shown = '', unsubs = [], pad = null, autoSent = '', lastPts = -1;

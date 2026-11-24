@@ -1,8 +1,8 @@
-// The seven games. Each game has host logic (start/next, run only on the TV) and two views: tv() and phone().
+// The eight games. Each game has host logic (start/next, run only on the TV) and two views: tv() and phone().
 // The TV is the referee: it writes the game state; phones only send their own answers.
-import { esc, shuffle, pick, norm, arr, obj, ANS, LEVELS, imgURL, calRing, MONTHS, avatar } from './common.js?v=20261116';
+import { esc, shuffle, pick, norm, arr, obj, ANS, LEVELS, imgURL, calRing, MONTHS, avatar } from './common.js?v=20261124';
 
-const T = { ask: 20, spinAsk: 30, draw: 90, title: 45, vote: 25, write: 50, quipWrite: 90, quipVote: 15, truths: 30, guess: 20 };
+const T = { ask: 20, spinAsk: 30, draw: 90, title: 45, vote: 25, write: 50, quipWrite: 90, quipVote: 15, truths: 30, guess: 20, flip: 25, who: 15 };
 const speedPts = (t, t0, dur) => 500 + Math.round(500 * Math.max(0, Math.min(1, 1 - ((t || 0) - t0) / (dur * 1000))));
 const add = (g, uid, pts) => { if (!uid || !pts) return; g.scores[uid] = (g.scores[uid] || 0) + pts; };
 const nameOf = (P, uid) => (P[uid] && P[uid].name) || 'Someone';
@@ -39,7 +39,7 @@ function storyBox(story, src, img, cal, extra = '') {
 function gainsList(gains, P, max = 18) {
   const rows = Object.entries(obj(gains)).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).slice(0, max);
   if (!rows.length) return `<p class="none">Nobody scored this time.</p>`;
-  return `<ul class="gains">${rows.map(([u, v]) => `<li>${avatar(P[u], 'sm')}<span>${esc(nameOf(P, u))}</span><b>+${v}</b></li>`).join('')}</ul>`;
+  return `<ul class="gains">${rows.map(([u, v]) => `<li>${avatar(P[u], 'sm')}<span class="nm">${esc(nameOf(P, u))}</span><b>+${v}</b></li>`).join('')}</ul>`;
 }
 export const TROPHY = '<svg class="trophy" viewBox="0 0 120 112" aria-hidden="true"><path d="M30 26H15c0 18 8 28 19 30M90 26h15c0 18-8 28-19 30" fill="none" stroke="#1f9e97" stroke-width="7" stroke-linecap="round"/><path d="M28 14h64v26c0 21-14 37-32 37S28 61 28 40z" fill="#45c6bf"/><path d="M60 14h32v26c0 21-14 37-32 37z" fill="#2fb0a9"/><path d="M42 24v20" stroke="#fff" stroke-opacity=".7" stroke-width="6" stroke-linecap="round"/><rect x="52" y="76" width="16" height="14" fill="#1f9e97"/><rect x="34" y="90" width="52" height="14" rx="5" fill="#8a5a2b"/></svg>';
 export function champLine(scores, P) {
@@ -517,5 +517,133 @@ const quip = {
   }
 };
 
-export const GAMES = { trivia, spin, doodle, truths, guess, fibs, quip };
-export const ORDER = ['trivia', 'spin', 'doodle', 'truths', 'guess', 'fibs', 'quip'];
+// ---------- 8. Memory Match with baby pictures (take turns) ----------
+// A face-down board of baby pictures on the TV. On your turn, flip two cards from your phone.
+// A match scores 1,000 and you go again. "Photos": find both copies of a picture, then everyone
+// guesses whose baby picture it was for bonus points. "Names": match each baby picture to the grown-up's name card.
+const memory = {
+  id: 'memory', name: 'Memory Match', color: '#25a06a',
+  blurb: 'Take turns flipping two cards on the TV to find matching baby pictures. A match scores and you go again.',
+  settings: [{ k: 'n', label: 'Pairs', opts: [[6, '6'], [8, '8'], [10, '10'], [12, '12']], def: 8 }, { k: 'mode', label: 'Match', opts: [['pic', 'Photos'], ['name', 'Names']], def: 'pic' }],
+  check: C => arr(C.babies).length >= 3 ? '' : 'Add baby pictures to the Babies tab first.',
+  cols: n => n <= 16 ? 4 : n <= 20 ? 5 : 6,
+  start(H, o) {
+    const one = {}; for (const b of shuffle(H.C.babies)) { const k = norm(b.person); if (!one[k]) one[k] = b; }
+    const babies = shuffle(Object.values(one)).slice(0, +o.n || 8).map(b => ({ person: b.person, img: b.img }));
+    const deck = shuffle(babies.flatMap((b, p) => [{ p, k: 0 }, { p, k: 1 }]));
+    H.S.g = { order: [], turn: 0, mode: o.mode === 'name' ? 'name' : 'pic', babies, deck, found: deck.map(() => 0), pairs: {}, scores: {} };
+    this.turn(H);
+  },
+  // whose turn: skip anyone who left, and fold in anyone who joined since the last turn
+  turn(H, again = false) {
+    const g = H.S.g, here = u => H.P[u] && H.P[u].online !== false;
+    for (const p of H.online()) if (!g.order.includes(p.uid)) g.order.push(p.uid);
+    for (let k = 0; k < g.order.length && !here(g.order[g.turn % g.order.length]); k++) { g.turn++; again = false; }
+    const cur = g.order[g.turn % g.order.length];
+    if (!cur || !here(cur)) return H.finish();
+    H.phase('pick1', { dur: T.flip, expect: [cur], view: { cur, open: [], again } });
+  },
+  next(H) {
+    const S = H.S, g = S.g, v = S.view, cur = v.cur, open = arr(v.open);
+    const ok = i => Number.isInteger(i) && i >= 0 && i < g.deck.length && !g.found[i] && !open.includes(i);
+    if (S.phase === 'pick1') {
+      const a = obj(H.inputs[cur]).a;
+      if (!ok(a)) return H.phase('show', { auto: 3, view: { cur, open: [], miss: 1 } });
+      return H.phase('pick2', { dur: T.flip, expect: [cur], view: { cur, open: [a], flip: a } });
+    }
+    if (S.phase === 'pick2') {
+      const a = open[0], b = obj(H.inputs[cur]).a;
+      if (!ok(b)) return H.phase('show', { auto: 3.5, view: { cur, open: [a], miss: 1 } });
+      const p = g.deck[a].p;
+      if (p !== g.deck[b].p) return H.phase('show', { auto: 4, view: { cur, open: [a, b], flip: b } });
+      g.found[a] = g.found[b] = cur; g.pairs[cur] = (g.pairs[cur] || 0) + 1; add(g, cur, 1000);
+      const gains = { [cur]: 1000 }, person = g.babies[p].person;
+      if (g.mode === 'pic') { // everyone guesses whose baby picture it is
+        const names = [...new Set([...H.C.people.map(x => x.name), ...H.C.babies.map(x => x.person)])].filter(x => norm(x) !== norm(person));
+        const opts = shuffle([person, ...shuffle(names).slice(0, 3)]), subj = matchPlayer(H, person);
+        return H.phase('who', { dur: T.who, expect: others(H, subj), view: { cur, open: [a, b], flip: b, p, opts, subj, gains, t0: H.now() } });
+      }
+      return H.phase('show', { auto: 4.5, view: { cur, open: [a, b], flip: b, p, match: 1, gains } });
+    }
+    if (S.phase === 'who') {
+      const right = v.opts.indexOf(g.babies[v.p].person), pickers = v.opts.map(() => []), gains = { ...obj(v.gains) };
+      for (const [u, x] of Object.entries(H.inputs)) {
+        const a = obj(x).a; if (!pickers[a]) continue; pickers[a].push(u);
+        if (a === right) { const pts = Math.round(speedPts(x.t, v.t0, T.who) / 2); add(g, u, pts); gains[u] = (gains[u] || 0) + pts; }
+      }
+      return H.phase('show', { auto: 6, view: { ...v, flip: -1, match: 1, right, pickers, gains } });
+    }
+    if (S.phase === 'show') {
+      if (g.found.every(Boolean)) return H.finish();
+      if (v.match) return this.turn(H, true);
+      g.turn++; return this.turn(H);
+    }
+  },
+  // one card face: the baby picture, or (Baby + name) the grown-up's name
+  face(g, c) {
+    const b = g.babies[c.p] || {};
+    return g.mode === 'name' && c.k === 1 ? `<span class="mmname"><small>Baby</small>${esc(b.person)}</span>` : `<img src="${esc(imgURL(b.img))}" alt="">`;
+  },
+  board(S, P) {
+    const g = S.g, v = S.view, open = arr(v.open), found = arr(g.found), n = g.deck.length, cols = this.cols(n);
+    return `<div class="mmboard" style="--cols:${cols};--rows:${Math.ceil(n / cols)}">${g.deck.map((c, i) => {
+      const f = found[i], up = open.includes(i);
+      const cls = (up || f ? ' up' : '') + (f && !up ? ' done' : '') + (f && up ? ' got' : '') + (i === v.flip ? ' flip' : '') + (g.mode === 'name' && c.k === 1 ? ' nm' : '');
+      return `<div class="mmcard${cls}"${f ? ` style="--pc:${esc((P[f] && P[f].color) || '#ffd23f')}"` : ''}><div class="mmback"><span>${i + 1}</span></div><div class="mmface">${this.face(g, c)}${f && !up ? `<i class="mmby">${avatar(P[f], 'sm')}</i>` : ''}</div></div>`;
+    }).join('')}</div>`;
+  },
+  tv(S, P) {
+    const g = S.g, v = S.view, who = esc(nameOf(P, v.cur)), done = arr(g.found).filter(Boolean).length / 2, tot = g.deck.length / 2;
+    const b = v.p != null ? g.babies[v.p] : null;
+    if (S.phase === 'who' || (S.phase === 'show' && v.opts)) {
+      const rev = S.phase === 'show';
+      return `<div class="mmwho"><figure class="pic snap mmbig"><img src="${esc(imgURL(b.img))}" alt="The baby picture ${who} just matched"></figure><div class="mmask">${kicker(`${who} found a pair! · ${done} of ${tot}`)}${rev ? `<p class="verdict yes">That’s baby ${esc(b.person)}!</p>` : big('Whose baby picture is this?')}${optsTV(v.opts, rev ? { right: v.right, pickers: v.pickers, P } : {})}${rev ? gainsList(v.gains, P, 10) : '<p class="sub">Guess on your phone. Faster right answers score more.</p>'}</div></div>`;
+    }
+    let line;
+    if (S.phase === 'pick1') line = v.again ? 'Go again! Pick a card on your phone.' : 'Pick a card on your phone.';
+    else if (S.phase === 'pick2') line = 'Now find its match!';
+    else if (v.miss) line = 'Time’s up! On to the next player.';
+    else if (v.match) line = `It’s a match! That’s baby ${esc(b.person)}. +1,000`;
+    else line = 'No match. Remember where those two are!';
+    const rows = Object.entries(obj(g.pairs)).filter(([, n]) => n > 0).sort((x, y) => y[1] - x[1]).slice(0, 6);
+    const side = `<aside class="mmside">${kicker(`${done} of ${tot} pairs found`)}<div class="mmturn">${avatar(P[v.cur], 'lg')}<h2>${S.phase === 'show' ? who : `${who}’s turn`}</h2></div><p class="mmline${S.phase === 'show' ? (v.match ? ' yes' : ' no') : ''}">${line}</p>${rows.length ? `<ul class="mmpairs">${rows.map(([u, n]) => `<li>${avatar(P[u], 'sm')}<span class="nm">${esc(nameOf(P, u))}</span><b>${n} ${n === 1 ? 'pair' : 'pairs'}</b></li>`).join('')}</ul>` : `<p class="mmtip">${g.mode === 'name' ? 'Match each baby picture to a name card.' : 'Find the two matching baby pictures.'}</p>`}</aside>`;
+    return `<div class="mmwrap">${side}<div class="mmbox">${this.board(S, P)}</div></div>`;
+  },
+  // the phone's copy of the board: numbered buttons in the same layout as the TV
+  pgrid(S) {
+    const g = S.g, v = S.view, open = arr(v.open), found = arr(g.found);
+    return `<div class="mmgrid" style="--cols:${this.cols(g.deck.length)}">${g.deck.map((c, i) => {
+      if (found[i] || open.includes(i)) return `<button class="mmt ${found[i] ? 'done' : 'up'}${g.mode === 'name' && c.k === 1 ? ' nm' : ''}" disabled aria-label="Card ${i + 1}, ${found[i] ? 'already matched' : 'flipped'}">${this.face(g, c)}</button>`;
+      return `<button class="mmt" data-choice="${i}" aria-label="Card ${i + 1}"><span>${i + 1}</span></button>`;
+    }).join('')}</div>`;
+  },
+  phone(S, me, mine, P = {}) {
+    const v = S.view, g = S.g, who = nameOf(P, v.cur), myTurn = v.cur === me;
+    if (S.phase === 'pick1' || S.phase === 'pick2') {
+      if (!myTurn) return waitWho(P[v.cur], `${who}’s turn`, S.phase === 'pick1' ? 'Watch the TV and remember where each baby is!' : 'Will they find the match?');
+      if (mine) return wait('Flipping…', 'Watch the card on the TV');
+      return `<div class="mmphone"><h2>${S.phase === 'pick2' ? 'Now find its match' : v.again ? 'Go again! Pick a card' : 'Your turn! Pick a card'}</h2>${this.pgrid(S)}<p class="mmhint">${S.phase === 'pick2' ? 'Your first card is face up. Tap the card you think matches it.' : 'Tap any face-down card. It flips on the TV.'}</p></div>`;
+    }
+    const b = v.p != null && g ? g.babies[v.p] : null;
+    if (S.phase === 'who') {
+      if (v.subj === me) return wait('That’s your baby picture!', 'Shh! Let everyone guess.', 'star');
+      return choicesPhone(v.opts, { mine, q: 'Whose baby picture is this?', kick: 'Name the baby', tools: b ? `<img class="mmq" src="${esc(imgURL(b.img))}" alt="">` : '' });
+    }
+    if (S.phase === 'show') {
+      const pts = obj(v.gains)[me];
+      if (v.miss) return myTurn ? resultPhone(false, 0, 'Your turn passed to the next player.', 'Time’s up!') : lookTV();
+      if (v.opts) {
+        const named = arr(arr(v.pickers)[v.right]).includes(me);
+        if (v.subj === me) { const n = arr(arr(v.pickers)[v.right]).length; return resultPhone(true, pts, `${n} ${n === 1 ? 'person' : 'people'} knew it was you.`, 'That’s you!'); }
+        if (myTurn) return resultPhone(true, pts, named ? 'Pair found, and you named the baby!' : `Pair found! That was baby ${b ? b.person : ''}.`, 'It’s a match!');
+        return resultPhone(named, pts, named ? 'You named the baby!' : `That was baby ${b ? b.person : ''}.`);
+      }
+      if (myTurn) return v.match ? resultPhone(true, pts, 'You get to go again!', 'It’s a match!') : resultPhone(false, 0, 'Remember where those two are.', 'No match');
+      return lookTV(v.match ? 'It’s a match!' : 'No match', v.match ? `${who} goes again.` : 'Remember where those two are!');
+    }
+    return lookTV();
+  }
+};
+
+export const GAMES = { trivia, spin, doodle, truths, guess, memory, fibs, quip };
+export const ORDER = ['trivia', 'spin', 'doodle', 'truths', 'guess', 'memory', 'fibs', 'quip'];

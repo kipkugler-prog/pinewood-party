@@ -1,7 +1,7 @@
 // TV / host screen. The TV runs the game: it owns the room, the timers and the scoring.
-import { connect } from './net.js?v=20261116';
-import { $, $$, esc, clean, obj, arr, loadContent, avatar, animateStrokes, PCOLORS } from './common.js?v=20261116';
-import { GAMES, ORDER, rankTV, TROPHY, champLine } from './games.js?v=20261116';
+import { connect } from './net.js?v=20261124';
+import { $, $$, esc, clean, obj, arr, loadContent, avatar, animateStrokes, PCOLORS } from './common.js?v=20261124';
+import { GAMES, ORDER, rankTV, TROPHY, champLine } from './games.js?v=20261124';
 
 const LETTERS = 'ABCDEFGHJKMNPQRSTUVWXYZ';
 const ROOMKEY = 'pp-host-room';
@@ -18,6 +18,7 @@ const ICON = {
   doodle: '<path d="M4 20l1.2-4.6L16.4 4.2a2.2 2.2 0 0 1 3.1 0l.3.3a2.2 2.2 0 0 1 0 3.1L8.6 18.8z"/><path d="M14.5 6l3.5 3.5"/>',
   truths: '<path d="M4 6.5l1.6 1.6L8.8 5M4 12.5l1.6 1.6 3.2-3.1M4.6 17.4l3.6 3.6M8.2 17.4l-3.6 3.6M12 6.6h8M12 12.6h8M12 19.2h8"/>',
   guess: '<circle cx="12" cy="8.2" r="4.2"/><path d="M4 21c.8-4.4 4-6.6 8-6.6s7.2 2.2 8 6.6"/>',
+  memory: '<rect x="2.6" y="4.6" width="9.6" height="13.6" rx="2" transform="rotate(-9 7.4 11.4)"/><rect x="11.6" y="5.4" width="9.6" height="13.6" rx="2"/><circle cx="16.4" cy="10.4" r="1.9"/><path d="M13.9 15.6c.5-1.3 1.3-1.9 2.5-1.9s2 .6 2.5 1.9"/>',
   fibs: '<path d="M5 3.5h10l4 4V20.5H5z"/><path d="M8.5 11h7M8.5 15.5h2.5M13.5 15.5h2"/>',
   quip: '<path d="M3.5 5h11v7.5h-6l-3.5 3v-3H3.5z"/><path d="M17 8.5h3.5v7.5H19v3l-3.5-3h-5v-1.5"/>',
   classic: '<rect x="2.5" y="4.5" width="19" height="13" rx="2"/><path d="M8 21h8M12 17.5V21"/>'
@@ -28,6 +29,7 @@ const CARD = {
   doodle: { tag: 'Draw it, then fib about it', need: '3+ players' },
   truths: { tag: 'Spot the lie in three', need: 'All play' },
   guess: { tag: 'Whose answer is this?', need: 'All play' },
+  memory: { tag: 'Find the matching babies', need: 'Take turns' },
   fibs: { tag: 'Fool everyone with a fake', need: '2+ players' },
   quip: { tag: 'Funniest answer wins', need: '3+ players' }
 };
@@ -86,7 +88,7 @@ async function boot() {
 
 async function loadQuestions() {
   C = null; renderLobbyParts();
-  try { C = await loadContent(); } catch (e) { C = { error: true, trivia: [], categories: [], people: [], guess: [], truths: [], fibs: [], quips: [], doodles: [] }; }
+  try { C = await loadContent(); } catch (e) { C = { error: true, trivia: [], categories: [], people: [], guess: [], truths: [], fibs: [], quips: [], doodles: [], babies: [] }; }
   renderLobbyParts();
 }
 
@@ -236,7 +238,7 @@ function renderLobbyParts() {
   cs.classList.toggle('err', !!(C && C.error));
   if (!C) cs.innerHTML = `<span class="dots"><i></i><i></i><i></i></span>Loading questions…`;
   else if (C.error) cs.innerHTML = `Couldn't load the question sheet. <button class="link" id="reload">Try again</button>`;
-  else cs.innerHTML = `<span class="src">Loaded from ${esc(C.note || 'built-in prompts')}:</span> ${C.trivia.length} trivia · ${C.truths.length} two-truths · ${C.guess.length} guess-who · ${C.fibs.length} fibs · ${C.quips.length} quips · ${C.doodles.length} doodles <button class="link" id="reload">Reload questions</button>`;
+  else cs.innerHTML = `<span class="src">Loaded from ${esc(C.note || 'built-in prompts')}:</span> ${C.trivia.length} trivia · ${C.truths.length} two-truths · ${C.guess.length} guess-who · ${C.fibs.length} fibs · ${C.quips.length} quips · ${C.doodles.length} doodles · ${arr(C.babies).length} baby pictures <button class="link" id="reload">Reload questions</button>`;
   const rl = $('#reload'); if (rl) rl.onclick = loadQuestions;
   // one shared reason (loading / nobody here yet) is shown once by the join panel; the cards only show their own reasons
   $('#cards').dataset.state = !C ? 'loading' : !ps.length ? 'waiting' : 'ready';

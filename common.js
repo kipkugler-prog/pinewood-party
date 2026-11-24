@@ -53,7 +53,8 @@ const TABS = {
   TwoTruths: ['person', 'truth1', 'lie'],
   Fibs: ['prompt', 'answer'],
   Quips: ['prompt'],
-  Doodles: ['prompt']
+  Doodles: ['prompt'],
+  Babies: ['person', 'image']
 };
 const isOn = r => !/^(no|n|off|false|0|x)$/i.test(String(r.on || '').trim());
 
@@ -94,7 +95,8 @@ export function buildContent(raw, note = '') {
     truths: R('TwoTruths').filter(r => r.person && r.truth1 && r.truth2 && r.lie).map(r => ({ person: r.person, t: [r.truth1, r.truth2], lie: r.lie })),
     fibs: R('Fibs').filter(r => r.prompt && r.answer).map(r => ({ prompt: r.prompt, a: r.answer, story: r.story || '' })),
     quips: R('Quips').map(r => r.prompt).filter(Boolean),
-    doodles: R('Doodles').map(r => r.prompt).filter(Boolean)
+    doodles: R('Doodles').map(r => r.prompt).filter(Boolean),
+    babies: R('Babies').filter(r => r.person && r.image).map(r => ({ person: r.person, img: r.image }))
   };
   // categories present in trivia but missing from the Categories tab get a default look
   const known = new Set(C.categories.map(c => c.id));
@@ -102,6 +104,7 @@ export function buildContent(raw, note = '') {
   [...new Set(C.trivia.map(t => t.cat))].forEach((id, i) => { if (!known.has(id)) { C.categories.push({ id, name: id, short: id, color: spare[i % spare.length], t: '#fff' }); known.add(id); } });
   if (!C.quips.length) C.quips = DEFAULT_QUIPS.slice();
   if (!C.doodles.length) C.doodles = DEFAULT_DOODLES.slice();
+  if (!C.babies.length) C.babies = DEFAULT_BABIES.map(([person, f]) => ({ person, img: `img/baby/${f}.jpg` }));
   return C;
 }
 
@@ -120,6 +123,13 @@ export const DEFAULT_QUIPS = [
   'What the turkey is really thinking right now', 'A new rule for the kids’ table', 'The least helpful thing to say while carving the turkey',
   'A terrible flavor of pie', 'The real reason Grandpa disappears after dinner', 'A family vacation that should never happen again',
   'The worst gift to give your sister', 'What the dog would say about this family', 'A bad slogan for Idaho potatoes'
+];
+// baby pictures for Memory Match when the Babies tab is empty or missing (the files live in img/baby/)
+export const DEFAULT_BABIES = [
+  ['Grandma Sally', 'grandma-sally'], ['Grandpa Don', 'grandpa-don'], ['Jen', 'jen'], ['Carl', 'carl'], ['Jill', 'jill'], ['Chris', 'chris'],
+  ['Joy', 'joy'], ['Kip', 'kip'], ['Erin', 'erin'], ['Isaac', 'isaac'], ['Josh', 'josh'], ['Aubrey', 'aubrey'], ['Colton', 'colton'],
+  ['Jace', 'jace'], ['Jillian', 'jillian'], ['Kash', 'kash'], ['Julianna', 'julianna'], ['Owen', 'owen'], ['Evie', 'evie'],
+  ['Liam', 'liam'], ['Camilla', 'camilla']
 ];
 export const DEFAULT_DOODLES = [
   'A turkey in a Halloween costume', 'Grandpa asleep in a recliner', 'A pie that went wrong', 'A minivan full of kids',

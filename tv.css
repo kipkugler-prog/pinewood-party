@@ -307,3 +307,64 @@ body.tv[data-game="lobby"] #cupbox{background:rgba(13,36,27,.72)}
 .lsnap img{display:block;width:100%;height:auto;border-radius:2px}
 .lsnap span{display:block;padding:.25em 0 .35em;text-align:center;font:700 1.35em/1.1 var(--fh);color:#2a2a2a}
 @container (max-height:150px){.lsnap .pol{display:none}}
+
+/* ---------- Memory Match (baby pictures) ----------
+   The board fills whatever room is left beside the turn panel: the card size follows the box (container units),
+   so 12 to 24 cards fit any TV without scrolling. Face-down cards are numbered to match the phones. */
+.tv .anim:has(.mmwrap){animation:none}
+.mmwrap{flex:1;min-height:0;display:grid;grid-template-columns:minmax(15em,21em) minmax(0,1fr);grid-template-rows:minmax(0,1fr);gap:2vw;align-items:center}
+.mmside{display:flex;flex-direction:column;gap:1.5vh;padding:2.6vh 1.4vw;background:var(--glass);border:1px solid var(--glassEdge);border-radius:24px;box-shadow:var(--lift);-webkit-backdrop-filter:blur(7px);backdrop-filter:blur(7px)}
+.mmside .kick{margin:0;font-size:.82em}
+.mmturn{display:flex;align-items:center;gap:.6em}
+.mmturn .av.lg{width:2.7em;height:2.7em;font-size:1.25em;box-shadow:0 0 0 .2em rgba(255,255,255,.2)}
+.mmturn h2{margin:0;font:600 1.75em/1.1 var(--fd);text-wrap:balance}
+.mmline{margin:0;font:600 1.3em/1.25 var(--fd);text-wrap:balance}
+.mmline.yes{color:#8ef0a8}.mmline.no{color:#ffc2cc}
+.mmtip{margin:0;font:700 .9em/1.35 var(--fb);color:rgba(255,255,255,.75)}
+.mmpairs{list-style:none;margin:0;padding:0;display:grid;gap:.4em}
+.mmpairs li{display:flex;align-items:center;gap:.5em;padding:.22em .8em .22em .25em;border-radius:999px;background:rgba(255,255,255,.08);font:700 .88em var(--fb)}
+.mmpairs .nm{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mmpairs li b{color:var(--gold);white-space:nowrap}
+.mmpairs .av.sm{width:1.9em;height:1.9em;font-size:.8em}
+.mmbox{container-type:size;width:100%;height:100%;min-height:0}
+.mmboard{--g:min(1.6cqh,1.2cqw);--cs:min(calc((100cqh - (var(--rows) - 1) * var(--g)) / var(--rows)),calc((100cqw - (var(--cols) - 1) * var(--g)) / var(--cols)));
+  height:100%;display:grid;grid-template-columns:repeat(var(--cols),var(--cs));grid-auto-rows:var(--cs);gap:var(--g);justify-content:center;align-content:center;perspective:1600px}
+.mmcard{position:relative;--r:calc(var(--cs) * .08)}
+.mmback,.mmface{position:absolute;inset:0;border-radius:var(--r);-webkit-backface-visibility:hidden;backface-visibility:hidden;transition:transform .5s cubic-bezier(.3,.7,.3,1)}
+/* card back: Lolly Pop Tree turquoise gingham inside a white border, a big number to call out */
+.mmback{display:grid;place-items:center;border:calc(var(--cs) * .045) solid #fffdf8;box-shadow:0 .5em 1.2em -.6em rgba(0,0,0,.7);
+  background-color:#2fb0a9;background-image:repeating-linear-gradient(0deg,rgba(255,255,255,.14) 0 12%,transparent 12% 24%),repeating-linear-gradient(90deg,rgba(255,255,255,.14) 0 12%,transparent 12% 24%)}
+.mmback span{font:600 calc(var(--cs) * .36)/1 var(--fd);color:#fff;text-shadow:0 .06em 0 rgba(0,0,0,.22)}
+.mmface{transform:rotateY(180deg);background:#fffdf8;padding:calc(var(--cs) * .045);box-shadow:0 .5em 1.2em -.6em rgba(0,0,0,.7)}
+.mmface img{display:block;width:100%;height:100%;object-fit:cover;border-radius:calc(var(--r) * .6)}
+.mmcard.nm .mmface{background:var(--note);display:grid;place-items:center;text-align:center}
+.mmname{display:flex;flex-direction:column;align-items:center;gap:.25em;padding:0 .3em;font:600 calc(var(--cs) * .17)/1.05 var(--fd);color:var(--noteInk);text-wrap:balance}
+.mmname small{font:800 calc(var(--cs) * .075)/1 var(--fb);letter-spacing:.1em;text-transform:uppercase;color:#8a6d3b}
+.mmcard.up .mmback{transform:rotateY(-180deg)}
+.mmcard.up .mmface{transform:rotateY(0)}
+.mmcard.flip .mmface{animation:mmface .55s cubic-bezier(.3,.7,.3,1)}
+.mmcard.flip .mmback{animation:mmback .55s cubic-bezier(.3,.7,.3,1)}
+@keyframes mmface{from{transform:rotateY(180deg)}}
+@keyframes mmback{from{transform:rotateY(0)}}
+.mmcard.done .mmface{opacity:.42;filter:saturate(.6);box-shadow:none}
+.mmcard.got .mmface{box-shadow:0 0 0 calc(var(--cs) * .035) var(--gold),0 0 calc(var(--cs) * .25) rgba(255,210,63,.55)}
+.mmby{position:absolute;right:-.35em;bottom:-.35em;font-style:normal}
+.mmby .av.sm{width:calc(var(--cs) * .24);height:calc(var(--cs) * .24);font-size:calc(var(--cs) * .1);box-shadow:0 0 0 2px rgba(13,36,27,.9)}
+/* "whose baby picture is this?" */
+.mmwho{flex:1;min-height:0;display:grid;grid-template-columns:auto minmax(0,1fr);gap:3vw;align-items:center}
+.mmbig{margin:0;padding:.7em;background:#fffdf8;border-radius:8px;transform:rotate(-1.6deg);box-shadow:0 22px 44px -18px rgba(0,0,0,.75)}
+.mmbig img{display:block;width:min(60vh,36vw);aspect-ratio:1;object-fit:cover;border-radius:4px}
+.mmask{display:flex;flex-direction:column;gap:2vh;min-width:0}
+.mmask .kick,.mmask .verdict{margin:0}
+.mmask .sub{margin:0;font:700 1em var(--fb);opacity:.8}
+@media (prefers-reduced-motion:reduce){.mmcard.flip .mmface,.mmcard.flip .mmback{animation:none}.mmback,.mmface{transition:none}}
+.tv .mmbig img{max-height:none;width:min(58vh,34vw);height:auto;aspect-ratio:1;object-fit:cover}
+/* the one-screen original sits under the eight phone games as a slim strip */
+.tv .gcard.classic{grid-column:1/-1;flex-direction:row;align-items:center;gap:1em;padding:.5em .8em .5em .9em}
+.tv .gcard.classic header{padding-top:0;min-height:0}
+.tv .gcard.classic .tag{margin:0}
+.tv .gcard.classic .sets,.tv .gcard.classic .why{display:none}
+.tv .gcard.classic .go.open{width:auto;min-height:2.2em;margin-left:auto;padding:.25em 1.3em}
+@media (max-width:900px){.tv .gcard.classic{flex-wrap:wrap}}
+.tv .gcard[data-g="memory"] .sets label:first-child{flex:0 0 3.7em}
+.tv .gcard[data-g="memory"] .sets label:last-child select{padding-right:1.3em;background-position:right .4em center}
